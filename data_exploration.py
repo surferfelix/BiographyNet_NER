@@ -1,18 +1,30 @@
 """This file serves the purpose of collecting statistics information for the biographies"""
 
 import json
+import os
 from os import stat
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import itertools
 
-def read_json(path: str) -> list:
-    '''Reads a json file for location specified in path'''
+def read_json(path: str, mode: str) -> list:
+    '''Reads a json file for location specified in path
+    mode: refers to whether it should be read from a directory or single file'''
     bio_obj = []
-    with open(path, 'r') as json_file:
-        for line in json_file:
-            bio_obj.append(json.loads(line)) #Appending dict to list
+    if mode == 'file':
+        with open(path, 'r') as json_file:
+            for line in json_file:
+                bio_obj.append(json.loads(line)) #Appending dict to list
+    elif mode == 'dir':
+        files = os.listdir(path)
+        for f in files:
+            print(path)
+            print(f)
+            with open(f"{path}/{f}", 'r') as json_file:
+                 for line in json_file:
+                    print(line)
+                    bio_obj.append(json.loads(line)) #Appending dict to list
     return bio_obj
 
 def collect_statistics(data, split: str):
@@ -56,8 +68,6 @@ def collect_statistics(data, split: str):
                 if d['text_entities']:
                     print('yay')
 
-
-
     return stat_dict
 
 def visualize_stat_dict(stat_dict):
@@ -85,7 +95,7 @@ def visualize_stat_dict(stat_dict):
 
 if __name__ == "__main__":
     print('Reading the data...')
-    all_data = read_json("data/Allbios.jsonl")
+    all_data = read_json("../data/json", mode = 'dir')
     print('Starting statistics collection')
     stat_dict = collect_statistics(all_data, split = 'train')
     visualize_stat_dict(stat_dict)
