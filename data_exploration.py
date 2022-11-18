@@ -19,12 +19,11 @@ def read_json(path: str, mode: str) -> list:
     elif mode == 'dir':
         files = os.listdir(path)
         for f in files:
-            print(path)
-            print(f)
-            with open(f"{path}/{f}", 'r') as json_file:
-                 for line in json_file:
-                    print(line)
-                    bio_obj.append(json.loads(line)) #Appending dict to list
+            if not f.startswith('.'):
+                print(f'Reading {f}')
+                with open(f"{path}/{f}", 'r', encoding = 'utf-8') as json_file:
+                    for line in json_file:
+                        bio_obj.append(json.loads(line))
     return bio_obj
 
 def collect_statistics(data, split: str):
