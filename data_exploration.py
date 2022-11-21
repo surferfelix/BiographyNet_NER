@@ -21,9 +21,11 @@ def read_json(path: str, mode: str) -> list:
         for f in files:
             if not f.startswith('.'):
                 print(f'Reading {f}')
-                with open(f"{path}/{f}", 'r', encoding = 'utf-8') as json_file:
-                    for line in json_file:
-                        bio_obj.append(json.loads(line))
+                with open(f"{path}/{f}", 'r') as json_file:
+                    a = json.loads(json_file)
+                    print(a)
+                    # for line in json_file:
+                    #     bio_obj.append(json.loads(line))
     return bio_obj
 
 def collect_statistics(data, split: str):
