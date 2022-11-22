@@ -1,13 +1,27 @@
 '''This script can be used to visualize dictionary data'''
+
+# Some imports all the classes need
+import json
+import os
+import matplotlib.pyplot as plt
+
+# Parser
+import argparse
+
 class Read:
-    import json
-    import os
     '''Can read files from different objects (dir, single_file)'''
     def __init__(self, path):
         path = self.path
     
     def from_directory(self):
-        pass
+        bio_obj = []
+        files = os.listdir(path)
+        for f in files:
+            if not f.startswith('.'):
+                print(f'Reading {f}')
+                with open(f"{path}/{f}", 'r') as json_file:
+                    a = json.loads(json_file)
+                    print(a)
 
     def from_file(self):
         bio_obj = []
@@ -17,15 +31,14 @@ class Read:
         return bio_obj
 
 class Visualize:
-    import matplotlib.pyplot as plt
     def __init__(self, obj: dict, path: str):
         '''This class can take a dictionary with {str: int}
         and visualize it to your liking
         :type obj: dict
         :type path: string
         :path: path to write to'''
-        self.obj = obj
         self.path = path
+        self.obj = obj
     
     def as_donut(self):
         '''Creates and saves a donut plot'''
@@ -44,9 +57,10 @@ class Visualize:
         plt.savefig(self.path)
 
 if __name__ == '__main__':
-    path = ''
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path", '-p')
+    parser.parse_args()
     f = Read(path)
-    v = f.Visualize()
     
 
 
