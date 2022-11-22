@@ -10,18 +10,17 @@ import argparse
 
 class Read:
     '''Can read files from different objects (dir, single_file)'''
-    def __init__(self, path):
-        path = self.path
+    def __init__(self, path: str):
+        self.path = path
     
     def from_directory(self):
         bio_obj = []
-        files = os.listdir(path)
+        files = os.listdir(self.path)
         for f in files:
             if not f.startswith('.'):
-                print(f'Reading {f}')
-                with open(f"{path}/{f}", 'r') as json_file:
-                    a = json.loads(json_file)
-                    print(a)
+                with open(f"{self.path}/{f}", 'r') as json_file:
+                    a = json.load(json_file)
+                    return a
 
     def from_file(self):
         bio_obj = []
@@ -57,10 +56,12 @@ class Visualize:
         plt.savefig(self.path)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("path", '-p')
-    parser.parse_args()
-    f = Read(path)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("path", '-p', type= str, required= True)
+    # parser.parse_args()
+    path = '../data/development/json'
+    a = Read(path)
+    a.from_directory()
     
 
 
