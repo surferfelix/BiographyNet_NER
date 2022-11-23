@@ -52,6 +52,15 @@ class Counter:
                 else:
                     counter_obj[dct['label']] = 1
         return counter_obj
+
+class Interpret:
+    '''For other interpretations, such as which people have tag PER for example'
+    Requires the bio_obj'''
+    
+    def __init__(self, obj):
+        self.obj = obj
+    
+    #TODO Finish this
         
     
 class Visualize:
@@ -81,19 +90,12 @@ class Visualize:
         plt.savefig(self.path)
 
 if __name__ == '__main__':
-    path = '../data/development/json'
+    path = '../data/full/AllBios.jsonl'
     a = Read(path)
-    bio_obj = a.from_directory()
-    print('This is from a directory')
+    bio_obj = a.from_file()
     b = Counter(bio_obj, 'text_entities')
-    c = b.from_bio_obj()
-    print(c)
-    
-    # path = "/Volumes/Samsung_T5/Text_Mining/MA_Thesis_2/data/development/Allbios_mini.jsonl"
-    # a = Read(path)
-    # b = a.from_file()
-    # Counter(b, 'text_entities')
-    # print('This is from a file')
-    # print(b)
+    counter_dict = b.from_bio_obj()
+    c = Visualize(counter_dict, '../data/plots/full_entities.png')
+    c.as_donut()
 
 

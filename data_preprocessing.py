@@ -2,6 +2,7 @@ import json
 import csv
 import sys
 import os
+from visualize_stuff import Visualize
 
 def read_training_data(path, mode = 'train') -> list:
     ''''''
@@ -17,7 +18,7 @@ def read_training_data(path, mode = 'train') -> list:
                     else:
                         key_counter[label] +=1 
                 print(key_counter)
-                return [row for row in infile]
+                return key_counter
     elif mode == 'dev':
         token_total = []
         keys_total = []
@@ -51,7 +52,13 @@ def check_data_distribution(train, dev, dis): # for now i use this to compare ty
 if __name__ == '__main__':
     train_path = '../data/train/AITrainingset1.0/Data/train.tsv'
     dev_path = '../data/development/json'
-    train = read_training_data(train_path)
+    train = read_training_data(train_path, mode = 'train')
+    print('THIS IS THE INPUT')
+    print(train)
+    new_a = {key[2::]: value for key, value in train.items() if not key == 'O'}
+    print(new_a)
+    a = Visualize(new_a, '../data/plots/train_train_entities.png')
+    a.as_donut()
     # dev_tok, *dev_keys = read_training_data(dev_path, mode = 'dev')
     # check_data_distribution(train, dev, dis)
     
