@@ -1,9 +1,10 @@
 '''This script can be used to visualize dictionary data'''
 
-# Some imports all the classes need
 import json
 import os
 import matplotlib.pyplot as plt
+import spacy
+from spacy.tokens import Doc
 
 # Parser
 import argparse
@@ -111,7 +112,46 @@ class Interpret:
             for word in dct['text_tokens']:
                 count+=1
         return count
-                    
+
+class Compare:
+    '''Will take two bio_obj and compare them''' 
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def overlap(self, lemmatize = True):
+        '''A function for calculating the overlapping words in x and y
+        :param lemmatize: should we lemmatize before calculating overlap?'''
+        # Prepare part #TODO: Think about splitting this bit?
+        obj1 = self.overlap_help(self.x)
+        obj2 = self.overlap_help(self.y)
+        if lemmatize:
+            obj1 = self.lemmatize_help(obj1)
+            obj2 = self.lemmatize_help(obj2)
+        ret = f"The intersection between x and y is {len(list(obj1.intersection(obj2)))}"
+        return ret
+        
+    def overlap_help(self, obj) -> set:
+        ret = set()
+        for dct in obj:
+            for token in dct['text_tokens']:
+                ret.add(token)
+        return ret
+    
+    def lemmatize_help(self, obj) -> set:
+        print('Lemmatizer ON')
+        print('Warning: Using the lemmatizer might take longer to run')
+        ret = set()
+        nlp = self.load_spacy()
+        doc = Doc(nlp.vocab, list(obj))
+        for token in nlp(doc):
+            ret.add(token.lemma_)
+        return ret
+
+    def load_spacy(self):
+        nlp = spacy.load('nl_core_news_lg')
+        return nlp
+
 class Visualize:
     '''This class can take a dictionary with {str: int}
         and visualize it to your liking
@@ -139,11 +179,16 @@ class Visualize:
         plt.savefig(self.path)
 
 if __name__ == '__main__':
-    # path = '../data/train/AITrainingset1.0/Data/train.tsv'
-    path = '../data/train/AITrainingset1.0/Data/validation.txt'
+    path = '../data/development/json'
     a = Read(path)
-    bio_obj = a.from_tsv()
-    a = Interpret(bio_obj)
-    print(a.count_words())
+    bio_obj_1 = a.from_directory()
+
+    path = '../data/train/AITrainingset1.0/Data/train.tsv'
+    a = Read(path)
+    bio_obj_2 = a.from_tsv()
+
+    b = Compare(bio_obj_1, bio_obj_2)
+    c = b.overlap()
+    print(c)
 
 
