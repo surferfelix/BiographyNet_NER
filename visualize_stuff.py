@@ -14,7 +14,7 @@ class Read:
     def __init__(self, path: str):
         self.path = path
     
-    def from_directory(self) -> dict:
+    def from_directory(self) -> dict: # For our development set
         bio_obj = []
         files = os.listdir(self.path)
         for f in files:
@@ -22,14 +22,31 @@ class Read:
                 with open(f"{self.path}/{f}", 'r') as json_file:
                     a = json.load(json_file)
                     bio_obj.append(a)
+        for i in bio_obj:
+            print(i['text_entities'])
         return bio_obj
 
-    def from_file(self) -> list:
+    def from_file(self) -> list: # For the full evaluation set
         bio_obj = []
         with open(self.path, 'r') as json_file:
             for line in json_file:
                 bio_obj.append(json.loads(line)) #Appending dict to list
         return bio_obj
+
+    def from_tsv(self) -> list: # word\tlabel --> [{text_entities: [{text: word, label: label}]}] # For the training data
+        import csv
+        import sys
+        ret = [{'text_entities': []}]
+        with open(self.path, encoding='windows-1252') as file:
+            csv.field_size_limit(sys.maxsize)
+            infile = csv.reader(file, delimiter='\t', quotechar='|')
+            # TODO Issue here is that we want to chain B I I tags together
+            for row in infile:
+                if row: # We skip sentence endings here, so we need to remember to see if we want it back later
+                    info = {'text': row[0], 'label': row[1]}
+                    for dct in ret:
+                        dct['text_entities'].append(info)
+        return ret
 
 class Counter:
     """Will count instances of key in obj and return a new dictionary object"""
@@ -56,13 +73,26 @@ class Counter:
 class Interpret:
     '''For other interpretations, such as which people have tag PER for example'
     Requires the bio_obj'''
-    
     def __init__(self, obj):
         self.obj = obj
     
-    #TODO Finish this
-        
+    def popular_persons(self, n: int):
+        from operator import itemgetter
+        "Will print n most popular persons in bio_object"
+        counter_obj = dict()
+        for dct in self.obj:
+            for lst in dct['text_entities']:
+                if "PER" in lst['label']:
+                    if lst['text'] in counter_obj:
+                        counter_obj[lst['text']] += 1
+                    else:
+                        counter_obj[lst['text']] = 1
+        res = dict(sorted(counter_obj.items(), key = itemgetter(1), reverse = True)[:n])
+        return res
     
+    def count_words(self):
+        pass
+                    
 class Visualize:
     '''This class can take a dictionary with {str: int}
         and visualize it to your liking
@@ -90,12 +120,12 @@ class Visualize:
         plt.savefig(self.path)
 
 if __name__ == '__main__':
-    path = '../data/full/AllBios.jsonl'
+    path = '../data/train/AITrainingset1.0/Data/train.tsv'
+    # path = '../data/development/json'
     a = Read(path)
-    bio_obj = a.from_file()
-    b = Counter(bio_obj, 'text_entities')
-    counter_dict = b.from_bio_obj()
-    c = Visualize(counter_dict, '../data/plots/full_entities.png')
-    c.as_donut()
-
+    bio_obj = a.from_tsv()
+    b = Interpret(bio_obj)
+    res = b.popular_persons(10)
+    print(res)
+    # print(res)
 
