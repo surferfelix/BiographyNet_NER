@@ -3,6 +3,7 @@
 import json
 import os
 import matplotlib.pyplot as plt
+from wordcloud import WordCloud
 import spacy
 from spacy.tokens import Doc
 
@@ -80,6 +81,25 @@ class Interpret:
     def __init__(self, obj):
         self.obj = obj
     
+    def count_word_rank(self) -> dict:
+        '''Counts words and removes stopwords
+        :return: dict of with count for each word'''
+        stopwords = set()
+        with open("stopwords/stopwords.txt") as f:
+            infile = f.readlines()
+            for line in infile:
+                stopwords.add(line.rstrip('\n'))
+        print(f"Removing stopwords\n{stopwords}")
+        counter_obj = dict()
+        for dct in self.obj:
+            for token in dct['text_tokens']:
+                if not token in stopwords:
+                    if token in counter_obj:
+                        counter_obj[token] += 1
+                    else:
+                        counter_obj[token] = 1
+        return counter_obj
+
     def popular_persons(self, n: int):
         "Will print n most popular persons in bio_object"
         counter_obj = dict()
@@ -223,9 +243,22 @@ class Visualize:
         # Visualizing the data
         plt.pie(values, labels = sources, frame = False, autopct='%1.1f%%')
         my_circle = plt.Circle( (0,0), 0.7, color='white')
-        p = plt.gcf()
+        # p = plt.gcf()
         p.gca().add_artist(my_circle)
         plt.savefig(self.path)
+    
+    def as_wordcloud(self):
+        '''Will take bio_obj, and count text tokens to generate a wordcloud
+        :return: a wordcloud'''
+        wc = WordCloud(background_color="white",width=1000,height=1000, 
+                        max_words=200,relative_scaling=0.5,normalize_plurals=False).generate_from_frequencies(self.obj)
+        wc.to_file(self.path)
+
+    def as_circular_barplot(self):
+        pass
+
+    #TODO circular barplot / wordcloud / treemap
+
 
 def train_comparisons(bio):
     '''Takes bio object and will compare to all items in trainset'''
@@ -247,10 +280,15 @@ def train_comparisons(bio):
 
 
 if __name__ == '__main__':
-    orig = Read('../data/train/AITrainingset1.0/Data/train.txt')
-    bio = orig.from_file()
-    train_comparisons()
+    orig = Read("../data/development/json")
+    bio = orig.from_directory()
+    d = Interpret(bio)
+    d = d.count_word_rank()
+    a = Visualize(d, '../data/plots/cloudtest.png')
+    b = a.as_wordcloud()
+    print(b)
+    
     
 
-    # d = Visualize(c, '../data/plots/top_10_misc.png')
-    # d.as_donut()
+    d = Visualize(c, '../data/plots/top_10_misc.png')
+    d.as_donut()
