@@ -93,6 +93,7 @@ class Interpret:
         counter_obj = dict()
         for dct in self.obj:
             for token in dct['text_tokens']:
+                token = token.lower()
                 if not token in stopwords:
                     if token in counter_obj:
                         counter_obj[token] += 1
