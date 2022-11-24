@@ -119,16 +119,24 @@ class Compare:
         self.x = x
         self.y = y
 
-    def overlap(self, lemmatize = True):
+    def overlap(self, lemmatize = True, verbose = True):
         '''A function for calculating the overlapping words in x and y
+        calculates score -> overlap/mintotaltok(obj1/2)*100
         :param lemmatize: should we lemmatize before calculating overlap?'''
         # Prepare part #TODO: Think about splitting this bit?
         obj1 = self.overlap_help(self.x)
         obj2 = self.overlap_help(self.y)
         if lemmatize:
             obj1 = self.lemmatize_help(obj1)
-            obj2 = self.lemmatize_help(obj2)
-        ret = f"The intersection between x and y is {len(list(obj1.intersection(obj2)))}"
+            obj2 = self.lemmatize_help(obj2, verbose = False)
+        if not lemmatize and verbose:
+            print('Lemmatizer OFF')
+        intersection = len(list(obj1.intersection(obj2)))
+        obj1_size = len(list(obj1))
+        obj2_size = len(list(obj2))
+        ret = f"The intersection between x of \nlength {obj1_size} and y of \nlength {obj2_size} is \n{intersection}"
+        score = intersection / min([obj1_size, obj2_size])*100
+        print(f"The score we will give is {score}")
         return ret
         
     def overlap_help(self, obj) -> set:
@@ -138,9 +146,10 @@ class Compare:
                 ret.add(token)
         return ret
     
-    def lemmatize_help(self, obj) -> set:
-        print('Lemmatizer ON')
-        print('Warning: Using the lemmatizer might take longer to run')
+    def lemmatize_help(self, obj, verbose = True) -> set:
+        if verbose:
+            print('Lemmatizer ON')
+            print('Warning: Using the lemmatizer might take longer to run')
         ret = set()
         nlp = self.load_spacy()
         doc = Doc(nlp.vocab, list(obj))
@@ -179,16 +188,22 @@ class Visualize:
         plt.savefig(self.path)
 
 if __name__ == '__main__':
-    path = '../data/development/json'
+    path = '../data/full/AllBios.jsonl'
     a = Read(path)
-    bio_obj_1 = a.from_directory()
+    bio_obj_1 = a.from_file()
 
     path = '../data/train/AITrainingset1.0/Data/train.tsv'
-    a = Read(path)
-    bio_obj_2 = a.from_tsv()
+    b = Read(path)
+    bio_obj_2 = b.from_tsv()
+    #TODO Train set is too small?
 
-    b = Compare(bio_obj_1, bio_obj_2)
-    c = b.overlap()
-    print(c)
+    a =Interpret(bio_obj_1).count_words()
+    b = Interpret(bio_obj_2).count_words()
+    print(a)
+    print(b)
+
+    # b = Compare(bio_obj_1, bio_obj_2)
+    # c = b.overlap(lemmatize=False)
+    # print(c)
 
 
