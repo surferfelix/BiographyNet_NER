@@ -103,8 +103,47 @@ class Interpret:
                         counter_obj[lst['text']] += 1
                     else:
                         counter_obj[lst['text']] = 1
-            res = dict(sorted(counter_obj.items(), key = self.itemgetter(1), reverse = True)[:n])
-            return res
+        res = dict(sorted(counter_obj.items(), key = self.itemgetter(1), reverse = True)[:n])
+        return res
+
+    def popular_time(self, n: int):
+        "Will print n most popular persons in bio_object"
+        counter_obj = dict()
+        for dct in self.obj:
+            for lst in dct['text_entities']:
+                if "TIME" in lst['label']:
+                    if lst['text'] in counter_obj:
+                        counter_obj[lst['text']] += 1
+                    else:
+                        counter_obj[lst['text']] = 1
+        res = dict(sorted(counter_obj.items(), key = self.itemgetter(1), reverse = True)[:n])
+        return res
+
+    def popular_organizations(self, n: int):
+        "Will print n most popular persons in bio_object"
+        counter_obj = dict()
+        for dct in self.obj:
+            for lst in dct['text_entities']:
+                if "ORG" in lst['label']:
+                    if lst['text'] in counter_obj:
+                        counter_obj[lst['text']] += 1
+                    else:
+                        counter_obj[lst['text']] = 1
+        res = dict(sorted(counter_obj.items(), key = self.itemgetter(1), reverse = True)[:n])
+        return res
+    
+    def popular_misc(self, n: int):
+        "Will print n most popular persons in bio_object"
+        counter_obj = dict()
+        for dct in self.obj:
+            for lst in dct['text_entities']:
+                if "MISC" in lst['label']:
+                    if lst['text'] in counter_obj:
+                        counter_obj[lst['text']] += 1
+                    else:
+                        counter_obj[lst['text']] = 1
+        res = dict(sorted(counter_obj.items(), key = self.itemgetter(1), reverse = True)[:n])
+        return res
 
     def count_words(self):
         count = 0
@@ -135,7 +174,7 @@ class Compare:
         obj1_size = len(list(obj1))
         obj2_size = len(list(obj2))
         ret = f"The intersection between x of \nlength {obj1_size} and y of \nlength {obj2_size} is \n{intersection}"
-        score = intersection / min([obj1_size, obj2_size])*100
+        score = intersection / obj2_size*100
         print(f"The score we will give is {score}")
         return ret
         
@@ -175,6 +214,7 @@ class Visualize:
         '''Creates and saves a donut plot'''
         values = []
         sources = []
+
         # Populating the lists
         for source, value in self.obj.items():
             values.append(value)
@@ -187,23 +227,30 @@ class Visualize:
         p.gca().add_artist(my_circle)
         plt.savefig(self.path)
 
+def train_comparisons(bio):
+    '''Takes bio object and will compare to all items in trainset'''
+    loc = '../data/train/AITrainingset1.0/Data'
+    for path in os.listdir(loc):
+        if path.endswith('.txt') and not path.startswith('.') and not path.startswith('vocab'):
+            a = Read(f"{loc}/{path}")
+            bio_obj_1 = a.from_tsv()
+            
+            b = Interpret(bio_obj_1)
+            word_count = b.count_words()
+
+            c = Compare(bio, bio_obj_1)
+            ret = c.overlap(lemmatize = True)
+        
+            print(f"In the set {path}")
+            print(f'The word count is {word_count}')
+            print(ret)
+
+
 if __name__ == '__main__':
-    path = '../data/full/AllBios.jsonl'
-    a = Read(path)
-    bio_obj_1 = a.from_file()
+    orig = Read('../data/train/AITrainingset1.0/Data/train.txt')
+    bio = orig.from_file()
+    train_comparisons()
+    
 
-    path = '../data/train/AITrainingset1.0/Data/train.tsv'
-    b = Read(path)
-    bio_obj_2 = b.from_tsv()
-    #TODO Train set is too small?
-
-    a =Interpret(bio_obj_1).count_words()
-    b = Interpret(bio_obj_2).count_words()
-    print(a)
-    print(b)
-
-    # b = Compare(bio_obj_1, bio_obj_2)
-    # c = b.overlap(lemmatize=False)
-    # print(c)
-
-
+    # d = Visualize(c, '../data/plots/top_10_misc.png')
+    # d.as_donut()
