@@ -4,6 +4,7 @@ import json
 import os
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
+import numpy as np
 import spacy
 from spacy.tokens import Doc
 
@@ -195,9 +196,9 @@ class Compare:
         obj1_size = len(list(obj1))
         obj2_size = len(list(obj2))
         ret = f"The intersection between x of \nlength {obj1_size} and y of \nlength {obj2_size} is \n{intersection}"
-        score = intersection / obj2_size*100
+        score = intersection / obj1_size*100
         print(f"The score we will give is {score}")
-        return ret
+        return score
         
     def overlap_help(self, obj) -> set:
         ret = set()
@@ -249,20 +250,80 @@ class Visualize:
         plt.savefig(self.path)
     
     def as_wordcloud(self):
-        '''Will take bio_obj, and count text tokens to generate a wordcloud
+        '''Will take dict to generate a wordcloud
         :return: a wordcloud'''
         wc = WordCloud(background_color="white",width=1000,height=1000, 
                         max_words=200,relative_scaling=0.5,normalize_plurals=False).generate_from_frequencies(self.obj)
         wc.to_file(self.path)
 
     def as_circular_barplot(self):
-        pass
+        '''Will take dict to create a circular barplot'''
+        ax = plt.subplot(111, polar=True)
+        plt.axis('off')
 
-    #TODO circular barplot / wordcloud / treemap
+        # Draw bars
+        bars = ax.bar(
+            x=angles, 
+            height=heights, 
+            width=width, 
+            bottom=lowerLimit,
+            linewidth=2, 
+            edgecolor="white",
+            color="#61a4b2",
+        )
+
+        # little space between the bar and the label
+        labelPadding = 4
+
+        # Add labels
+        for bar, angle, height, label in zip(bars,angles, heights, df["Name"]):
+
+            # Labels are rotated. Rotation must be specified in degrees :(
+            rotation = np.rad2deg(angle)
+
+            # Flip some labels upside down
+            alignment = ""
+            if angle >= np.pi/2 and angle < 3*np.pi/2:
+                alignment = "right"
+                rotation = rotation + 180
+            else: 
+                alignment = "left"
+
+            # Finally add the labels
+            ax.text(
+                x=angle, 
+                y=lowerLimit + bar.get_height() + labelPadding, 
+                s=label, 
+                ha=alignment, 
+                va='center', 
+                rotation=rotation, 
+                rotation_mode="anchor")
+
+    def as_barplot(self):
+        '''Will make a barplot from the counter object'''
+        data = self.obj
+        # Sorting the dictionary object by value
+        sorted_obj = sorted(self.obj.items(), key = lambda x:x[1]) # List of tuples [(John, 22), (Alex, 23)]
+        values = []
+        sources = []
+        for tup in sorted_obj:
+            sources.append(tup[0])
+            values.append(tup[1])
+
+        x_pos = np.arange(len(sources))
+
+        # Create bars
+        plt.bar(x_pos, values)
+
+        # Create names on the x-axis
+        plt.xticks(x_pos, sources, color='orange', rotation = 90)
+        plt.yticks(color='orange')
+        plt.subplots_adjust(bottom=0.4, top = 0.99)
+        plt.savefig(self.path)
 
 
 def train_comparisons(bio):
-    '''Takes bio object and will compare to all items in trainset'''
+    '''Takes bio object of Bionet file and will compare to all items in trainset'''
     loc = '../data/train/AITrainingset1.0/Data'
     for path in os.listdir(loc):
         if path.endswith('.txt') and not path.startswith('.') and not path.startswith('vocab'):
@@ -279,17 +340,54 @@ def train_comparisons(bio):
             print(f'The word count is {word_count}')
             print(ret)
 
+def create_wordclouds_for_all_train_files(dir):
+    """Takes a path to a directory with trainfiles and will create wordclouds for all of them"""
+    loc = '../data/train/AITrainingset1.0/Data'
+    for path in os.listdir(loc):
+        if path.endswith('.txt') and not path.startswith('.') and not path.startswith('vocab'):
+            a = Read(f"{loc}/{path}")
+            bio_obj_1 = a.from_tsv()
+            
+            b = Interpret(bio_obj_1)
+            ranked = b.count_word_rank()
+
+            vis = Visualize(ranked, f"wordclouds/WordCloud_{path.rstrip('.txt')}.png")
+            vis.as_wordcloud()
+
+def generate_barplot_from_scores(bio):
+    '''Takes a loaded bio obj and compares to items in train set to generate scores
+    , will draw a barplot to a file'''
+    gendict = dict() # This is the dict we use to draw the barplot from
+    loc = '../data/train/AITrainingset1.0/Data'
+    for path in os.listdir(loc):
+        if path.endswith('.txt') and not path.startswith('.') and not path.startswith('vocab'):
+            a = Read(f"{loc}/{path}")
+            bio_obj_1 = a.from_tsv()
+            
+            b = Interpret(bio_obj_1)
+            word_count = b.count_words()
+
+            c = Compare(bio, bio_obj_1)
+            ret = c.overlap(lemmatize = False)
+
+            if not path in gendict:
+                gendict[path] = ret
+
+            print(f"In the set {path}")
+            print(f'The word count is {word_count}')
+            print(ret)
+    writepath = 'wordclouds/barplot_with_overlap_scores.png'
+    vis = Visualize(gendict, writepath)
+    vis.as_barplot()
+
 
 if __name__ == '__main__':
-    orig = Read("../data/development/json")
-    bio = orig.from_directory()
-    d = Interpret(bio)
-    d = d.count_word_rank()
-    a = Visualize(d, '../data/plots/cloudtest.png')
-    b = a.as_wordcloud()
-    print(b)
-    
-    
+    path = '../data/full/AllBios.jsonl'
+    a = Read(path)
+    bio_obj = a.from_file()
+    generate_barplot_from_scores(bio_obj)
+    # b = Interpret(bio_obj)
+    # ranked = b.count_word_rank()
 
-    d = Visualize(c, '../data/plots/top_10_misc.png')
-    d.as_donut()
+    # vis = Visualize(ranked, "WordCloud_AllBios.png")
+    # vis.as_wordcloud()
