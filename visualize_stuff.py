@@ -173,6 +173,36 @@ class Interpret:
             for word in dct['text_tokens']:
                 count+=1
         return count
+    
+    def concatenate_bios(self):
+        '''Will interpret the bio-obj and concatenate sequences of BI tags to form 'whole' tag representations
+        :return: a new bio object with only whole tagged items'''
+        obj = self.obj # I want to test if new variable helps with runtime
+        storage_obj = {'text_entities': [{}]} #{'text_entities': [word: tag, label: label]}
+        window = 10 # We assume no entity will have more than 10 tokens
+        for dct in obj:
+            for i, entity in enumerate(dct['text_entities']):
+                tl = [] # We join the objects in here
+                labs = []
+                if entity['label'].startswith('B'): # We know it is the onset of an entity
+                    tl.append(entity['text'])
+                    for l in range(window):
+                        try:
+                            if dct['text_entities'][i+l]['label'].startswith('I'):
+                                txt = dct['text_entities'][i+l]['text']
+                                lab = entity['label']
+                                if txt:
+                                    tl.append(txt)
+                                    labs.append(lab)
+                        except IndexError:
+                            continue # We are at the end of the file
+                    entity = ' '.join(tl)
+                    if labs:
+                        l = labs[0][2:]
+                        ret = {'word': entity, 'label': l}
+                        storage_obj['text_entities'].append(ret)
+        return storage_obj
+            
 
 class Compare:
     '''Will take two bio_obj and compare them''' 
@@ -382,10 +412,13 @@ def generate_barplot_from_scores(bio):
 
 
 if __name__ == '__main__':
-    path = '../data/full/AllBios.jsonl'
+    path = '../data/train/AITrainingset1.0/Data/train.txt'
     a = Read(path)
-    bio_obj = a.from_file()
-    generate_barplot_from_scores(bio_obj)
+    bio_obj = a.from_tsv()
+    b = Interpret(bio_obj)
+    b.BIO_concat_mode()
+
+    
     # b = Interpret(bio_obj)
     # ranked = b.count_word_rank()
 
