@@ -90,7 +90,7 @@ class Interpret:
             infile = f.readlines()
             for line in infile:
                 stopwords.add(line.rstrip('\n'))
-        print(f"Removing stopwords\n{stopwords}")
+        # print(f"Removing stopwords\n{stopwords}")
         counter_obj = dict()
         for dct in self.obj:
             for token in dct['text_tokens']:
@@ -173,12 +173,17 @@ class Interpret:
             for word in dct['text_tokens']:
                 count+=1
         return count
+
+    def count_bionet_sources(self):
+        pass
+            
     
     def concatenate_bios(self):
         '''Will interpret the bio-obj and concatenate sequences of BI tags to form 'whole' tag representations
-        :return: a new bio object with only whole tagged items'''
+        :return: a new bio object with only whole tagged items, 
+        in which case word represents the FULL entity, and label the tag for that entity'''
         obj = self.obj # I want to test if new variable helps with runtime
-        storage_obj = {'text_entities': [{}]} #{'text_entities': [word: tag, label: label]}
+        storage_obj = {'text_entities': [{}], "text_tokens": []} #{'text_entities': [word: tag, label: label]}
         window = 10 # We assume no entity will have more than 10 tokens
         for dct in obj:
             for i, entity in enumerate(dct['text_entities']):
@@ -201,7 +206,8 @@ class Interpret:
                         l = labs[0][2:]
                         ret = {'word': entity, 'label': l}
                         storage_obj['text_entities'].append(ret)
-        return storage_obj
+                        storage_obj['text_tokens'].append(entity)
+        return [storage_obj]
             
 
 class Compare:
@@ -384,6 +390,22 @@ def create_wordclouds_for_all_train_files(dir):
             vis = Visualize(ranked, f"wordclouds/WordCloud_{path.rstrip('.txt')}.png")
             vis.as_wordcloud()
 
+def create_popular_entity_wordclouds_for_all_train_files(dir, ent = 'PER'):
+    loc = '../data/train/AITrainingset1.0/Data'
+    for path in os.listdir(loc):
+        if path.endswith('.txt') and not path.startswith('.') and not path.startswith('vocab'):
+            a = Read(f"{loc}/{path}")
+            bio_obj_1 = a.from_tsv()
+            b = Interpret(bio_obj_1)
+            bio_obj_2 = b.concatenate_bios()
+            print(bio_obj_2)
+            
+            c = Interpret(bio_obj_2)
+            ranked = c.count_word_rank()
+
+            vis = Visualize(ranked, f"wordclouds/WordCloud_{path.rstrip('.txt')}.png")
+            vis.as_wordcloud()
+
 def generate_barplot_from_scores(bio):
     '''Takes a loaded bio obj and compares to items in train set to generate scores
     , will draw a barplot to a file'''
@@ -412,11 +434,26 @@ def generate_barplot_from_scores(bio):
 
 
 if __name__ == '__main__':
-    path = '../data/train/AITrainingset1.0/Data/train.txt'
-    a = Read(path)
-    bio_obj = a.from_tsv()
+    # path = '../data/train/AITrainingset1.0/Data'
+    # create_popular_entity_wordclouds_for_all_train_files(path)
+    path = '../data/full/AllBios.jsonl'
+    a= Read(path)
+    bio_obj = a.from_file()
     b = Interpret(bio_obj)
-    b.BIO_concat_mode()
+    bio_obj_2 = b.concatenate_bios()
+    print(bio_obj)
+            
+    c = Interpret(bio_obj_2)
+    ranked = c.count_word_rank()
+
+    vis = Visualize(ranked, f"wordclouds/WordCloud_AllBios.png")
+    vis.as_wordcloud()
+
+
+    # a = Read(path)
+    # bio_obj = a.from_tsv()
+    # b = Interpret(bio_obj)
+    # bio_obj = b.BIO_concat_mode()
 
     
     # b = Interpret(bio_obj)
