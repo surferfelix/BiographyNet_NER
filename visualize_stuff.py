@@ -38,11 +38,12 @@ class Read:
         # word\tlabel --> [{text_entities: [{text: word, label: label}]}]
         import csv
         import sys
-        ret = [{'text_entities': [], 'text_tokens': []}]
+        ret = [{'text_entities': [], 'text_tokens': [], 'text_sents': []}] # We need to add text sents
         with open(self.path, encoding='windows-1252') as file:
             csv.field_size_limit(sys.maxsize)
             infile = csv.reader(file, delimiter='\t', quotechar='|')
             # TODO Issue here is that we want to chain B I I tags together
+            s = [] # Container to hold sentence objects
             for row in infile:
                 if row: # We skip sentence endings here, so we need to remember to see if we want it back later
                     word = row[0]
@@ -51,6 +52,10 @@ class Read:
                     for dct in ret:
                         dct['text_entities'].append(info)
                         dct['text_tokens'].append(word)
+                        s.append(word) 
+                else: # If not row we clear s
+                    dct['text_sents'].append(s)
+                    s = []
         return ret
 
 class Counter:
