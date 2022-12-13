@@ -53,7 +53,7 @@ class Read:
                         dct['text_entities'].append(info)
                         dct['text_tokens'].append(word)
                         s.append(word) 
-                else: # If not row we clear s
+                elif not row and s: # If not row we clear s
                     dct['text_sents'].append(s)
                     s = []
         return ret
