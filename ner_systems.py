@@ -17,13 +17,33 @@ class Preprocess_for_Models():
     
     def flair_preparation(self):
         tagger = SequenceTagger.load('flair/ner-dutch-large')
+        tokens = []
+        preds = []
+        gold = [word['label'] for dct in self.bio_obj for word in dct['text_entities']] #TODO Make this inheritable variable
         for dct in self.bio_obj:
             for s in dct["text_sents"]:
-                sentence = ' '.join(s) 
-                flair_piece = Sentence(sentence, use_tokenizer = False)
+                # sentence = ' '.join(s) 
+                flair_piece = Sentence(s, use_tokenizer=False)
                 tagger.predict(flair_piece)
-                print(flair_piece) # TODO get output in correct format
-
+                tagged_lst = flair_piece.to_tagged_string().split()
+                tagging_mode = False
+                tag = ""
+                for index, token in enumerate(tagged_lst):
+                    if not index == len(tagged_lst)-1:
+                        check = ["<B-", "<E-", "<I-", "<S-"]
+                        if any(tagged_lst[index+1].startswith(i) for i in check):
+                            label = tagged_lst[index+1] #[3:6]
+                            tokens.append(token) # The label always occurs after the token
+                            preds.append(label)
+                            continue
+                        elif any((token).startswith(i) for i in check):
+                            continue
+                        else:
+                            label = "O"
+                            tokens.append(token)
+                            preds.append(label)
+        return tokens, preds, gold
+        
     def stanza_preparation(self):
         ''':return: token, pred, gold'''
         nlp = stanza.Pipeline(lang = "nl", processors= 'tokenize, ner', tokenize_pretokenized=True)
