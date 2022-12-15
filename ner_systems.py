@@ -16,13 +16,13 @@ class Preprocess_for_Models():
         pass
     
     def flair_preparation(self):
-        tagger = SequenceTagger.load('flair/ner-dutch')
+        tagger = SequenceTagger.load('flair/ner-dutch-large')
         for dct in self.bio_obj:
             for s in dct["text_sents"]:
                 sentence = ' '.join(s) 
                 flair_piece = Sentence(sentence, use_tokenizer = False)
                 tagger.predict(flair_piece)
-                print(flair_piece)
+                print(flair_piece) # TODO get output in correct format
 
     def stanza_preparation(self):
         ''':return: token, pred, gold'''
