@@ -6,7 +6,9 @@ from visualize_stuff import Read  # We import the read module here so we don't n
 from flair.data import Sentence
 from flair.models import SequenceTagger
 from sklearn.metrics import classification_report
+import csv
 # Because sentencepiece in flair does not support python=3.10 yet, we had to change to python version 3.9
+# Flair 0.11 does not output to_tagged_string properly, issue noted and project reverted to flair 0.10 for now
 
 class Run_Models():
     '''Class for running the Stanza, Flair and BERTje models'''
@@ -61,47 +63,123 @@ class Run_Models():
                 labels.append(token.ner)
         return tokens, labels, gold
 
+    def run_baseline_bertje(self):
+        pass
+
     def to_file(self, path = '', name = ''):
         print(set(self.preds))
         print(set(self.gold))
 
+class Write_Output_to_File():
+    def __init__(self, tok, pred, gold):
+        self.tok = tok
+        self.pred = pred
+        self.gold = gold
+    
+    def to_tsv(self, path):
+        with open(path, 'w') as f:
+            writer = csv.writer(f, delimiter='\t', quotechar = "|")
+            for a, b, c in zip(self.tok, self.pred, self.gold):
+                writer.writerow([a,b,c])
+
+
+class Clean_Model_Output():
+    """Will clean out all tags other than PER and LOC"""
+    def __init__(self, pred, gold):
+        self.pred = pred
+        self.gold = gold
+
+    def clean_flair(self):
+            # We first grab only LOC and PER labels, and then clean them out
+        clean_pred = []
+        clean_gold = []
+        # Cleaning the predictions {'<I-ORG>', '<E-PER>', '<S-MISC>', 'O', '<S-ORG>', '<B-PER>', '<I-MISC>', '<I-LOC>', '<S-LOC>', '<S-PER>', '<E-MISC>', '<B-MISC>', '<E-LOC>', '<B-ORG>', '<I-PER>', '<B-LOC>', '<E-ORG>'}
+        for label in self.pred:
+            if label.endswith('LOC>'):
+                clean_pred.append('LOC')
+            elif label.endswith('PER>'):
+                clean_pred.append('PER')
+            elif label == 'O':
+                clean_pred.append(label)
+            else:
+                clean_pred.append('O')
+        # Cleaning the GOLD {'B-TIME', 'B-PER', 'O', 'I-LOC', 'B-LOC', 'I-TIME', 'I-PER'}
+        for label in self.gold:
+            if label.endswith('LOC') or label.endswith('PER'):
+                # print('Adding slice', label[2:5])
+                clean_gold.append(label[2:5])
+            else:
+                clean_gold.append('O')
+        # assert len(clean_gold) == len(clean_pred), 'Gold size is different than pred size'
+        print(f'Starting length before cleaning, pred: {len(self.pred)}, gold: {len(self.gold)}')
+        print(f"Cleaned sizes, pred {len(clean_pred)}, gold: {len(clean_gold)}")
+        return clean_pred, clean_gold
+
+    def clean_stanza(self):
+        """_summary_
+
+        Returns:
+            _type_: tuple
+        """
+        print(set(self.pred))
+        print(set(self.gold))
+        clean_pred = []
+        clean_gold = []
+        for i, e in zip(self.pred, self.gold):
+            if i.endswith('LOC') or i.endswith('PER'):
+                clean_pred.append(i[-3:])
+            else:
+                clean_pred.append('O')
+            if e.endswith('LOC') or e.endswith('PER'):
+                clean_gold.append(e[-3:])
+            else:
+                clean_gold.append('O')
+        return clean_pred, clean_gold
 
 def Evaluate_Model(tok, pred, gold):
-    # We first grab only LOC and PER labels, and then clean them out
-    clean_pred = []
-    clean_gold = []
-    # Cleaning the predictions {'<I-ORG>', '<E-PER>', '<S-MISC>', 'O', '<S-ORG>', '<B-PER>', '<I-MISC>', '<I-LOC>', '<S-LOC>', '<S-PER>', '<E-MISC>', '<B-MISC>', '<E-LOC>', '<B-ORG>', '<I-PER>', '<B-LOC>', '<E-ORG>'}
-    for label in pred:
-        if label.endswith('LOC>'):
-            clean_pred.append('LOC')
-        elif label.endswith('PER>'):
-            clean_pred.append('PER')
-        elif label == 'O':
-            clean_pred.append(label)
-        else:
-            clean_pred.append('O')
-    # Cleaning the GOLD {'B-TIME', 'B-PER', 'O', 'I-LOC', 'B-LOC', 'I-TIME', 'I-PER'}
-    for label in gold:
-        if label.endswith('LOC') or label.endswith('PER'):
-            # print('Adding slice', label[2:5])
-            clean_gold.append(label[2:5])
-        else:
-            clean_gold.append('O')
-    # assert len(clean_gold) == len(clean_pred), 'Gold size is different than pred size'
-    print(f'Starting length before cleaning, pred: {len(pred)}, gold: {len(gold)}')
-    print(f"Cleaned sizes, pred {len(clean_pred)}, gold: {len(clean_gold)}")
-    report = classification_report(y_true = clean_gold, y_pred = clean_pred)
+    """_summary_
+
+    Args:
+        tok (_type_): _description_
+        pred (_type_): _description_
+        gold (_type_): _description_
+    """
+    report = classification_report(y_true = gold, y_pred = pred)
     print(report)
         
 
-def main(path):
-    '''Performs experiment'''
+def run_flair(path):
     r = Read(path)
     bio_obj = r.from_tsv()
     # [word['label'] for dct in self.bio_obj for word in dct['text_entities']]
     a = Run_Models(bio_obj)
     tok, pred, gold = a.run_flair()
+    outputter = Write_Output_to_File(tok, pred, gold)
+    writepath = "model_results/flair_"+path.split('/')[-1].rstrip('.txt')+".tsv"
+    outputter.to_tsv(writepath)
+    cleaner = Clean_Model_Output(pred, gold)
+    pred, gold = cleaner.clean_flair()
     Evaluate_Model(tok, pred, gold)
+
+def run_stanza(path):
+    r = Read(path)
+    bio_obj = r.from_tsv()
+    # [word['label'] for dct in self.bio_obj for word in dct['text_entities']]
+    a = Run_Models(bio_obj)
+    tok, pred, gold = a.run_stanza()
+    outputter = Write_Output_to_File(tok, pred, gold)
+    writepath = "model_results/stanza_"+path.split('/')[-1].rstrip('.txt')+".tsv"
+    outputter.to_tsv(writepath)
+    cleaner = Clean_Model_Output(pred, gold)
+    pred, gold = cleaner.clean_stanza()
+    Evaluate_Model(tok, pred, gold)
+
+def main(path):
+    '''Performs experiment'''
+    print("Running Flair")
+    # run_flair(path)
+    print("Running Stanza")
+    run_stanza(path)
     
 if __name__ == '__main__':
     train = ''
