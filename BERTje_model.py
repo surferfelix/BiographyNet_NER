@@ -9,13 +9,45 @@ from transformers import pipeline
 
 def run_BERTje(s):
     ''':s: The sentence to run on
-    :type: s: A list of tokens in the sentence'''
+    :type: s: A list of tokens'''
     tokenizer = AutoTokenizer.from_pretrained("wietsedv/bert-base-dutch-cased-finetuned-conll2002-ner")
     model = AutoModelForTokenClassification.from_pretrained("wietsedv/bert-base-dutch-cased-finetuned-conll2002-ner")
     nlp = pipeline("ner", model=model, tokenizer = tokenizer)
     example = "Ik ben Wolfgang en ik woon in Berlijn"
     ner_results = nlp(example)
-    print(ner_results)
+    return example, ner_results
+
+
+def map_tokens_to_entities(text: str, entities):
+     # Convert the text to a list of tokens
+    tokens = text.split()
+    
+    # Initialize a list of labels with "O" for each token
+    labels = ["O" for i in tokens]
+    
+    # Iterate over the entities
+    for entity in entities:
+        # Get the start and end indices of the entity
+        start = entity['start']
+        end = entity['end']
+        
+        # Get the label for the entity
+        label = entity['entity']
+        
+        # Find the tokens corresponding to the entity
+        entity_tokens = text[start:end].split()
+        print(entity_tokens)
+        
+        # Set the labels for the tokens corresponding to the entity
+        for index, token in enumerate(tokens): #TODO Create labels list from here instead
+            if token in entity_tokens:
+                labels.insert(index, label)
+    return tokens, labels
+
 
 if __name__ == '__main__':
-    run_BERTje('')
+    example = "Ik ben Wolfgang en ik woon in Berlijn"
+    # pret = example.split()
+    text, entities = run_BERTje(example)
+    res = map_tokens_to_entities(text, entities)
+    print(res)
