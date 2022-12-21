@@ -24,6 +24,8 @@ def map_tokens_to_entities(text: str, entities):
     
     # Initialize a list of labels with "O" for each token
     labels = ["O" for i in tokens]
+    for i in tokens:
+        print(i)
     
     # Iterate over the entities
     for entity in entities:
@@ -41,7 +43,7 @@ def map_tokens_to_entities(text: str, entities):
         # Set the labels for the tokens corresponding to the entity
         for index, token in enumerate(tokens): #TODO Create labels list from here instead
             if token in entity_tokens:
-                labels.insert(index, label)
+                labels[index] = label
     return tokens, labels
 
 
