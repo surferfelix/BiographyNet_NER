@@ -1,97 +1,204 @@
 """This model is a finetuned version of the BERTje model from wietsedv for named entity recognition on biographical texts
-It should be able to detect PER and LOC ner labels"""
-import tensorflow as tf
+It should be able to detect PER and LOC ner labels
+
+The finetuning code was largely adapted from the following notebook: https://github.com/cltl/ma-ml4nlp-labs/blob/main/code/bert4ner/bert_finetuner.ipynb"""
+import random, time, os
 import torch
-from torch.utils.data import Dataset, DataLoader
-from transformers import (AutoConfig, 
-                          AutoModelForSequenceClassification, 
-                          AutoTokenizer, AdamW, 
-                          get_linear_schedule_with_warmup,
-                          set_seed, BertTokenizer
-                          )
+from torch.nn import CrossEntropyLoss
+import numpy as np
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler
+from transformers import BertForTokenClassification, AdamW
+from transformers import get_linear_schedule_with_warmup
+import logging, sys
+from transformers import BertTokenizer
 import pandas as pd
+# Our code behind the scenes!
+import bert_utils as utils
 
 class Read_Data_as_df():
     '''Will read the path to the data and process it as a pd dataframe'''
     def __init__(self, data):
         self.data = data
     
-    def process():
-        return pd.read_csv(self.data)
+    def process(self): # TODO Need to get it to 
+        d = pd.read_csv(self.data, delimiter = "\t", encoding = 'unicode_escape', names = ['token', 'gold'])
+        print(d.head())
 
-class BiographyModel(Dataset):
-    def __init__(self):
-        pass
-
-class FineTuned_Biography_Model():
-    """For now doing it all in here"""
+class FineTune_On_Dataframe():
+    """Finetunes pre-trained BERTje on dataframe data"""
+    
     def __init__(self, examples):
+        '''We initialize all hyperparameters here'''
+        # TODO Maybe move these variables to a main, since it would be cleaner
         self.n_examples = len(examples)
+        self.epochs = 2
+        self.model_name = "GroNLP/bert-base-dutch-cased"
+        self.gpu_run_ix = 0
+        self.seed_val = 1234500 # For reproducability
+        self.seq_max_len = 256
+        self.print_info_every = 10
+        self.gradient_clip = 1.0
+        self.learning_rate = 1e-5
+        self.batch_size = 4
+        self.train_data_path = "../data/train/AITrainingset1.0/Data/test_RHC.txt"
+        self.dev_data_path = "../data/train/AITrainingset1.0/Data/test_RHC.txt"
+        self.save_model_dir = "../saved_models"
+        self.LABELS_FILENAME = f"{self.save_model_dir}/label2index.json"
+        self.LOSS_TRN_FILENAME = f"{self.save_model_dir}/Losses_Train_{self.epochs}.json"
+        self.LOSS_DEV_FILENAME = f"{self.save_model_dir}/Losses_Dev_{self.epochs}.json"
+        self.PAD_TOKEN_LABEL_ID = CrossEntropyLoss().ignore_index # -100
+        if not os.path.exists(self.save_model_dir):
+            os.makedirs(self.save_model_dir)
 
-    def read_in_pandas(path):# TODO: For now we read with pandas, but we should implement this into our main read function
-        data = pd.read_csv(path, delimiter = '\t')
-        return data
 
-    def prepare_sentences():
-        pass
+        # Initialize Random seeds and validate if there's a GPU available...
+        self.device, self.USE_CUDA = utils.get_torch_device(self.gpu_run_ix)
+        random.seed(self.seed_val)
+        np.random.seed(self.seed_val)
+        torch.manual_seed(self.seed_val)
+        torch.cuda.manual_seed_all(self.seed_val)
+    
+    def Logger(self):
+        console_hdlr = logging.StreamHandler(sys.stdout)
+        file_hdlr = logging.FileHandler(filename=f"{self.save_model_dir}/BERT_TokenClassifier_train_{self.epochs}.log")
+        logging.basicConfig(level=logging.INFO, handlers=[console_hdlr, file_hdlr])
+        logging.info("Start Logging")
 
-    def Load_Models(dataframe):
-        """"""
-        #Tokenization and input
-        tokenizer = BertTokenizer.from_pretrained("GroNLP/bert-base-dutch-cased")
-        # Tokenize dataset
-        max_len = 0
+    def Load_Datasets(self):
+        tokenizer = BertTokenizer.from_pretrained(self.model_name, do_basic_tokenize=False)
 
-        # For every sentence... #TODO Map sentences to variable
-        for sent in sentences:
+        # Load Train Dataset
+        train_data, train_labels, train_label2index = utils.read_conll(self.train_data_path, has_labels=True)
+        train_inputs, train_masks, train_labels, seq_lengths = utils.data_to_tensors(train_data, 
+                                                                                    tokenizer, 
+                                                                                    max_len=self.seq_max_len, 
+                                                                                    labels=train_labels, 
+                                                                                    label2index=train_label2index,
+                                                                                    pad_token_label_id=self.PAD_TOKEN_LABEL_ID)
+        utils.save_label_dict(train_label2index, filename=self.LABELS_FILENAME)
+        index2label = {v: k for k, v in train_label2index.items()}
 
-            # Tokenize the text and add `[CLS]` and `[SEP]` tokens.
-            input_ids = tokenizer.encode(sent, add_special_tokens=True)
+    
+        # Create the DataLoader for our training set.
+        train_data = TensorDataset(train_inputs, train_masks, train_labels)
+        train_sampler = RandomSampler(train_data)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=self.batch_size)
 
-            # Update the maximum sentence length.
-            max_len = max(max_len, len(input_ids))
+        # Load Dev Dataset
+        dev_data, dev_labels, _ = utils.read_conll(self.dev_data_path, has_labels=True)
+        dev_inputs, dev_masks, dev_labels, dev_lens = utils.data_to_tensors(dev_data, 
+                                                                            tokenizer, 
+                                                                            max_len=self.seq_max_len, 
+                                                                            labels=dev_labels, 
+                                                                            label2index=train_label2index,
+                                                                            pad_token_label_id=self.PAD_TOKEN_LABEL_ID)
 
-        print('Max sentence length: ', max_len)
-    #     #Check to run from GPU or CPU
-    #     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #     model_name = "GroNLP/bert-base-dutch-cased"
-    #     print('Loading configuration...')
-    #     model_config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_name) #TODO n_labels
-    #     print("Loading tokenizer...")
-    #     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    #     print("Loading model...")
-    #     model = AutoModelForSequenceClassification(pretrained_model_name_or_path = model_name, config = model_config)
-    #     # Load model to defined device
-    #     model.to(device)
-    #     print('Model loaded to `%s`'%device)
-    #     return model
+        # Create the DataLoader for our Development set.
+        dev_data = TensorDataset(dev_inputs, dev_masks, dev_labels, dev_lens)
+        dev_sampler = RandomSampler(dev_data)
+        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=self.batch_size)
 
-    # def Load_Dataset():
-    #     print('Dealing with Train...')
-    #     # Create pytorch dataset.
-    #     train_dataset = BiographyModel(path=training_path, 
-    #                                 use_tokenizer=tokenizer, 
-    #                                 labels_ids=labels_ids,
-    #                                 max_sequence_len=max_length)
 
-    #     print('Created `train_dataset` with %d examples!'%len(train_dataset))
+    def Initialize_Model_Components(self):
+        model = BertForTokenClassification.from_pretrained(self.model_name, num_labels=len(train_label2index))
+        model.config.finetuning_task = 'token-classification'
+        model.config.id2label = index2label
+        model.config.label2id = train_label2index
+        if self.USE_CUDA: 
+            model.cuda()
 
-    #     # Move pytorch dataset into dataloader.
-    #     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    #     print('Created `train_dataloader` with %d batches!'%len(train_dataloader))
+        # Total number of training steps is number of batches * number of epochs.
+        total_steps = len(train_dataloader) * self.epochs
 
-    #     print()
+        # Create optimizer and the learning rate scheduler.
+        optimizer = AdamW(model.parameters(), lr=self.learning_rate, eps=1e-8)
+        scheduler = get_linear_schedule_with_warmup(optimizer,
+                                                num_warmup_steps=0,
+                                                num_training_steps=total_steps)
+    def Fine_Tuning(self):
+        loss_trn_values, loss_dev_values = [], []
 
-    #     print('Dealing with ...')
-    #     # Create pytorch dataset.
-    #     valid_dataset =  BiographyModel(path=valid_path, 
-    #                                 use_tokenizer=tokenizer, 
-    #                                 labels_ids=labels_ids,
-    #                                 max_sequence_len=max_length)
+        for epoch_i in range(1, EPOCHS+1):
+            # Perform one full pass over the training set.
+            logging.info("")
+            logging.info('======== Epoch {:} / {:} ========'.format(epoch_i, EPOCHS))
+            logging.info('Training...')
 
-    #     print('Created `valid_dataset` with %d examples!'%len(valid_dataset))
+            t0 = time.time()
+            total_loss = 0
+            model.train()
 
-    #     # Move pytorch dataset into dataloader.
-    #     valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
-    #     print('Created `eval_dataloader` with %d batches!'%len(valid_dataloader))
+            # For each batch of training data...
+            for step, batch in enumerate(train_dataloader):
+                b_input_ids = batch[0].to(device)
+                b_input_mask = batch[1].to(device)
+                b_labels = batch[2].to(device)
+
+                model.zero_grad()
+
+                # Perform a forward pass (evaluate the model on this training batch).
+                outputs = model(b_input_ids, attention_mask=b_input_mask, labels=b_labels)
+                loss = outputs[0]
+                total_loss += loss.item()
+
+                # Perform a backward pass to calculate the gradients.
+                loss.backward()
+
+                # Clip the norm of the gradients to 1.0.
+                torch.nn.utils.clip_grad_norm_(model.parameters(), GRADIENT_CLIP)
+
+                # Update parameters
+                optimizer.step()
+                scheduler.step()
+
+                # Progress update
+                if step % PRINT_INFO_EVERY == 0 and step != 0:
+                    # Calculate elapsed time in minutes.
+                    elapsed = utils.format_time(time.time() - t0)
+                    # Report progress.
+                    logging.info('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.    Loss: {}.'.format(step, len(train_dataloader),
+                                                                                                    elapsed, loss.item()))
+
+            # Calculate the average loss over the training data.
+            avg_train_loss = total_loss / len(train_dataloader)
+
+            # Store the loss value for plotting the learning curve.
+            loss_trn_values.append(avg_train_loss)
+
+            logging.info("")
+            logging.info("  Average training loss: {0:.4f}".format(avg_train_loss))
+            logging.info("  Training Epoch took: {:}".format(utils.format_time(time.time() - t0)))
+
+            # ========================================
+            #               Validation
+            # ========================================
+            # After the completion of each training epoch, measure our performance on our validation set.
+            t0 = time.time()
+            results, preds_list = utils.evaluate_bert_model(dev_dataloader, BATCH_SIZE, model, tokenizer, index2label, PAD_TOKEN_LABEL_ID, prefix="Validation Set")
+            loss_dev_values.append(results['loss'])
+            logging.info("  Validation Loss: {0:.2f}".format(results['loss']))
+            logging.info("  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['precision']*100, results['recall']*100, results['f1']*100))
+            logging.info("  Validation took: {:}".format(utils.format_time(time.time() - t0)))
+
+
+            # Save Checkpoint for this Epoch
+            utils.save_model(f"{SAVE_MODEL_DIR}/EPOCH_{epoch_i}", {"args":[]}, model, tokenizer)
+
+
+        utils.save_losses(loss_trn_values, filename=LOSS_TRN_FILENAME)
+        utils.save_losses(loss_dev_values, filename=LOSS_DEV_FILENAME)
+        logging.info("")
+        logging.info("Training complete!")
+
+
+def main():
+    examples = ''
+    a = FineTune_On_Dataframe(examples):
+
+
+
+if __name__ == '__main__':
+    main()
+    
+    
     
