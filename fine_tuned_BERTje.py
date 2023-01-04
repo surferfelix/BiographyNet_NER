@@ -97,9 +97,9 @@ class FineTune_On_Dataframe():
         dev_data = TensorDataset(dev_inputs, dev_masks, dev_labels, dev_lens)
         dev_sampler = RandomSampler(dev_data)
         dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=self.batch_size)
+        return train_label2index, index2label, train_dataloader, dev_dataloader, tokenizer
 
-
-    def Initialize_Model_Components(self):
+    def Initialize_Model_Components(self, train_label2index, index2label, train_dataloader):
         model = BertForTokenClassification.from_pretrained(self.model_name, num_labels=len(train_label2index))
         model.config.finetuning_task = 'token-classification'
         model.config.id2label = index2label
@@ -115,13 +115,15 @@ class FineTune_On_Dataframe():
         scheduler = get_linear_schedule_with_warmup(optimizer,
                                                 num_warmup_steps=0,
                                                 num_training_steps=total_steps)
-    def Fine_Tuning(self):
+        return model, optimizer, scheduler
+
+    def Fine_Tune(self, model, train_dataloader, dev_dataloader, optimizer, scheduler, tokenizer, index2label):
         loss_trn_values, loss_dev_values = [], []
 
-        for epoch_i in range(1, EPOCHS+1):
+        for epoch_i in range(1, self.epochs+1):
             # Perform one full pass over the training set.
             logging.info("")
-            logging.info('======== Epoch {:} / {:} ========'.format(epoch_i, EPOCHS))
+            logging.info('======== Epoch {:} / {:} ========'.format(epoch_i, self.epochs))
             logging.info('Training...')
 
             t0 = time.time()
@@ -130,9 +132,9 @@ class FineTune_On_Dataframe():
 
             # For each batch of training data...
             for step, batch in enumerate(train_dataloader):
-                b_input_ids = batch[0].to(device)
-                b_input_mask = batch[1].to(device)
-                b_labels = batch[2].to(device)
+                b_input_ids = batch[0].to(self.device)
+                b_input_mask = batch[1].to(self.device)
+                b_labels = batch[2].to(self.device)
 
                 model.zero_grad()
 
@@ -145,14 +147,14 @@ class FineTune_On_Dataframe():
                 loss.backward()
 
                 # Clip the norm of the gradients to 1.0.
-                torch.nn.utils.clip_grad_norm_(model.parameters(), GRADIENT_CLIP)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), self.gradient_clip)
 
                 # Update parameters
                 optimizer.step()
                 scheduler.step()
 
                 # Progress update
-                if step % PRINT_INFO_EVERY == 0 and step != 0:
+                if step % self.print_info_every == 0 and step != 0:
                     # Calculate elapsed time in minutes.
                     elapsed = utils.format_time(time.time() - t0)
                     # Report progress.
@@ -174,7 +176,7 @@ class FineTune_On_Dataframe():
             # ========================================
             # After the completion of each training epoch, measure our performance on our validation set.
             t0 = time.time()
-            results, preds_list = utils.evaluate_bert_model(dev_dataloader, BATCH_SIZE, model, tokenizer, index2label, PAD_TOKEN_LABEL_ID, prefix="Validation Set")
+            results, preds_list = utils.evaluate_bert_model(dev_dataloader, self.BATCH_SIZE, model, tokenizer, index2label, self.PAD_TOKEN_LABEL_ID, prefix="Validation Set")
             loss_dev_values.append(results['loss'])
             logging.info("  Validation Loss: {0:.2f}".format(results['loss']))
             logging.info("  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['precision']*100, results['recall']*100, results['f1']*100))
@@ -182,20 +184,22 @@ class FineTune_On_Dataframe():
 
 
             # Save Checkpoint for this Epoch
-            utils.save_model(f"{SAVE_MODEL_DIR}/EPOCH_{epoch_i}", {"args":[]}, model, tokenizer)
+            utils.save_model(f"{self.save_model_dir}/EPOCH_{epoch_i}", {"args":[]}, model, tokenizer)
 
 
-        utils.save_losses(loss_trn_values, filename=LOSS_TRN_FILENAME)
-        utils.save_losses(loss_dev_values, filename=LOSS_DEV_FILENAME)
+        utils.save_losses(loss_trn_values, filename=self.LOSS_TRN_FILENAME)
+        utils.save_losses(loss_dev_values, filename=self.LOSS_DEV_FILENAME)
         logging.info("")
         logging.info("Training complete!")
 
 
 def main():
-    examples = ''
-    a = FineTune_On_Dataframe(examples):
-
-
+    """Executes the Fine Tuning process"""
+    a = FineTune_On_Dataframe() # We initialize our hyperparameters
+    logger = a.Logger() # We set up our logger
+    train_label2index, index2label, train_dataloader, dev_dataloader, tokenizer = a.Load_Datasets() # We load our dev and train data
+    model, optimizer, scheduler = a.Initialize_Model_Components(train_label2index, index2label, train_dataloader) # We initialize the components
+    a.Fine_Tune(model, train_dataloader, dev_dataloader, optimizer, scheduler, tokenizer, index2label)
 
 if __name__ == '__main__':
     main()
