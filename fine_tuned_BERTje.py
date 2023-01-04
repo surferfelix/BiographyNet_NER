@@ -13,7 +13,7 @@ import logging, sys
 from transformers import BertTokenizer
 import pandas as pd
 # Our code behind the scenes!
-import bert_utils as utils
+import BERTje_utils as utils
 
 class Read_Data_as_df():
     '''Will read the path to the data and process it as a pd dataframe'''
@@ -27,10 +27,9 @@ class Read_Data_as_df():
 class FineTune_On_Dataframe():
     """Finetunes pre-trained BERTje on dataframe data"""
     
-    def __init__(self, examples):
+    def __init__(self):
         '''We initialize all hyperparameters here'''
         # TODO Maybe move these variables to a main, since it would be cleaner
-        self.n_examples = len(examples)
         self.epochs = 2
         self.model_name = "GroNLP/bert-base-dutch-cased"
         self.gpu_run_ix = 0
@@ -40,8 +39,8 @@ class FineTune_On_Dataframe():
         self.gradient_clip = 1.0
         self.learning_rate = 1e-5
         self.batch_size = 4
-        self.train_data_path = "../data/train/AITrainingset1.0/Data/test_RHC.txt"
-        self.dev_data_path = "../data/train/AITrainingset1.0/Data/test_RHC.txt"
+        self.train_data_path = "../data/train/AITrainingset1.0/Data/test_SA.txt"
+        self.dev_data_path = "../data/train/AITrainingset1.0/Data/test_SA.txt"
         self.save_model_dir = "../saved_models"
         self.LABELS_FILENAME = f"{self.save_model_dir}/label2index.json"
         self.LOSS_TRN_FILENAME = f"{self.save_model_dir}/Losses_Train_{self.epochs}.json"
@@ -57,8 +56,7 @@ class FineTune_On_Dataframe():
         np.random.seed(self.seed_val)
         torch.manual_seed(self.seed_val)
         torch.cuda.manual_seed_all(self.seed_val)
-    
-    def Logger(self):
+
         console_hdlr = logging.StreamHandler(sys.stdout)
         file_hdlr = logging.FileHandler(filename=f"{self.save_model_dir}/BERT_TokenClassifier_train_{self.epochs}.log")
         logging.basicConfig(level=logging.INFO, handlers=[console_hdlr, file_hdlr])
@@ -196,7 +194,6 @@ class FineTune_On_Dataframe():
 def main():
     """Executes the Fine Tuning process"""
     a = FineTune_On_Dataframe() # We initialize our hyperparameters
-    logger = a.Logger() # We set up our logger
     train_label2index, index2label, train_dataloader, dev_dataloader, tokenizer = a.Load_Datasets() # We load our dev and train data
     model, optimizer, scheduler = a.Initialize_Model_Components(train_label2index, index2label, train_dataloader) # We initialize the components
     a.Fine_Tune(model, train_dataloader, dev_dataloader, optimizer, scheduler, tokenizer, index2label)
