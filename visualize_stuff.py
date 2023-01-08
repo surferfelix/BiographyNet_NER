@@ -395,8 +395,25 @@ def create_wordclouds_for_all_train_files(dir):
             vis = Visualize(ranked, f"wordclouds/WordCloud_{path.rstrip('.txt')}.png")
             vis.as_wordcloud()
 
-def create_popular_entity_wordclouds_for_all_train_files(dir, ent = 'PER'):
-    loc = '../data/train/AITrainingset1.0/Data'
+
+def create_popular_entity_wordclouds_for_all_bios(path, ent = 'PER'):
+    loc = path
+    if path.endswith("jsonl"):
+        a = Read(loc)
+        bio_obj_1 = a.from_file()
+        b = Interpret(bio_obj_1)
+        bio_obj_2 = b.concatenate_bios()
+        # print(bio_obj_1)
+        # print(bio_obj_2)
+        
+        c = Interpret(bio_obj_2)
+        ranked = c.count_word_rank()
+
+        vis = Visualize(ranked, f"../wordclouds/WordCloud_Entities_{path.rstrip('.jsonl')}.png")
+        vis.as_wordcloud()
+
+def create_popular_entity_wordclouds_for_all_train_files(path, ent = 'PER'):
+    loc = path
     for path in os.listdir(loc):
         if path.endswith('.txt') and not path.startswith('.') and not path.startswith('vocab'):
             a = Read(f"{loc}/{path}")
@@ -439,30 +456,17 @@ def generate_barplot_from_scores(bio):
 
 
 if __name__ == '__main__':
-    # path = '../data/train/AITrainingset1.0/Data'
-    # create_popular_entity_wordclouds_for_all_train_files(path)
     path = '../data/full/AllBios.jsonl'
-    a= Read(path)
-    bio_obj = a.from_file()
-    b = Interpret(bio_obj)
-    bio_obj_2 = b.concatenate_bios()
-    print(bio_obj)
+    create_popular_entity_wordclouds_for_all_bios(path)
+    # path = '../data/full/AllBios.jsonl'
+    # a= Read(path)
+    # bio_obj = a.from_file()
+    # b = Interpret(bio_obj)
+    # bio_obj_2 = b.concatenate_bios()
+    # print(bio_obj)
             
-    c = Interpret(bio_obj_2)
-    ranked = c.count_word_rank()
+    # c = Interpret(bio_obj_2)
+    # ranked = c.count_word_rank()
 
-    vis = Visualize(ranked, f"wordclouds/WordCloud_AllBios.png")
-    vis.as_wordcloud()
-
-
-    # a = Read(path)
-    # bio_obj = a.from_tsv()
-    # b = Interpret(bio_obj)
-    # bio_obj = b.BIO_concat_mode()
-
-    
-    # b = Interpret(bio_obj)
-    # ranked = b.count_word_rank()
-
-    # vis = Visualize(ranked, "WordCloud_AllBios.png")
+    # vis = Visualize(ranked, f"wordclouds/WordCloud_AllBios.png")
     # vis.as_wordcloud()

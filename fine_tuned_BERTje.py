@@ -30,7 +30,7 @@ class FineTune_On_Dataframe():
     def __init__(self):
         '''We initialize all hyperparameters here'''
         # TODO Maybe move these variables to a main, since it would be cleaner
-        self.epochs = 2
+        self.epochs = 10
         self.model_name = "GroNLP/bert-base-dutch-cased"
         self.gpu_run_ix = 0
         self.seed_val = 1234500 # For reproducability
@@ -39,8 +39,8 @@ class FineTune_On_Dataframe():
         self.gradient_clip = 1.0
         self.learning_rate = 1e-5
         self.batch_size = 4
-        self.train_data_path = "../data/train/AITrainingset1.0/Data/test_SA.txt"
-        self.dev_data_path = "../data/train/AITrainingset1.0/Data/test_SA.txt"
+        self.train_data_path = "../data/train/AITrainingset1.0/Data/test_SA_mini.txt"
+        self.dev_data_path = "../data/train/AITrainingset1.0/Data/test_SA_mini.txt"
         self.save_model_dir = "../saved_models"
         self.LABELS_FILENAME = f"{self.save_model_dir}/label2index.json"
         self.LOSS_TRN_FILENAME = f"{self.save_model_dir}/Losses_Train_{self.epochs}.json"
@@ -174,11 +174,12 @@ class FineTune_On_Dataframe():
             # ========================================
             # After the completion of each training epoch, measure our performance on our validation set.
             t0 = time.time()
-            results, preds_list = utils.evaluate_bert_model(dev_dataloader, self.BATCH_SIZE, model, tokenizer, index2label, self.PAD_TOKEN_LABEL_ID, prefix="Validation Set")
-            loss_dev_values.append(results['loss'])
-            logging.info("  Validation Loss: {0:.2f}".format(results['loss']))
-            logging.info("  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['precision']*100, results['recall']*100, results['f1']*100))
-            logging.info("  Validation took: {:}".format(utils.format_time(time.time() - t0)))
+            # This will write the results to a file
+            utils.evaluate_bert_model(dev_dataloader, self.batch_size, model, tokenizer, index2label, self.PAD_TOKEN_LABEL_ID, prefix="Validation Set")
+            # loss_dev_values.append(results['loss'])
+            # logging.info("  Validation Loss: {0:.2f}".format(results['loss']))
+            # logging.info("  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['precision']*100, results['recall']*100, results['f1']*100))
+            # logging.info("  Validation took: {:}".format(utils.format_time(time.time() - t0)))
 
 
             # Save Checkpoint for this Epoch
