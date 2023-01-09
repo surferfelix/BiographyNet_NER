@@ -29,4 +29,4 @@ Finetuning this BERTje model on other data can be easily done with the following
 
 `python fine_tuned_BERTje.py {TRAIN_PATH}, {EVAL_PATH}, -e {EPOCHS}, -b {BATCH_SIZE}`
 
-where epochs and batch size are optional arguments
+where epochs and batch size are optional arguments, with default epochs being 8, and default batch size being 4
