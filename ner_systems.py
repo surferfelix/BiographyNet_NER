@@ -7,6 +7,7 @@ from flair.data import Sentence
 from flair.models import SequenceTagger
 from sklearn.metrics import classification_report
 import csv
+import BERTje_model as model
 # Because sentencepiece in flair does not support python=3.10 yet, we had to change to python version 3.9
 # Flair 0.11 does not output to_tagged_string properly, issue noted and project reverted to flair 0.10 for now
 
@@ -64,7 +65,15 @@ class Run_Models():
         return tokens, labels, gold
 
     def run_baseline_bertje(self):
-        pass
+        for dct in self.bio_obj:
+            for s in dct["text_sents"]:
+                sentence = ' '.join(s)
+                example, ner_results = model.run_BERTje(sentence)
+                tokens, labels = model.map_tokens_to_entities(example, ner_results)
+                for t,g in zip(tokens, labels):
+                    self.tokens.append(t)
+                    self.preds.append(g)
+        return self.tokens, self.preds, self.gold
 
     def to_file(self, path = '', name = ''):
         print(set(self.preds))
@@ -136,7 +145,23 @@ class Clean_Model_Output():
                 clean_gold.append('O')
         return clean_pred, clean_gold
 
-def Evaluate_Model(tok, pred, gold):
+    def clean_bertje(self):
+        clean_pred = []
+        clean_gold = []
+        for i, e in zip(self.pred, self.gold):
+            if i.upper().endswith('LOC') or i.upper().endswith('PER'):
+                clean_pred.append(i[-3:].upper())
+            else:
+                clean_pred.append('O')
+            if e.upper().endswith('LOC') or e.upper().endswith('PER'):
+                clean_gold.append(e[-3:])
+            else:
+                clean_gold.append('O')
+        return clean_pred, clean_gold
+            
+
+
+def Evaluate_Model(pred, gold):
     """_summary_
 
     Args:
@@ -159,7 +184,7 @@ def run_flair(path):
     outputter.to_tsv(writepath)
     cleaner = Clean_Model_Output(pred, gold)
     pred, gold = cleaner.clean_flair()
-    Evaluate_Model(tok, pred, gold)
+    Evaluate_Model(pred, gold)
 
 def run_stanza(path):
     r = Read(path)
@@ -172,14 +197,28 @@ def run_stanza(path):
     outputter.to_tsv(writepath)
     cleaner = Clean_Model_Output(pred, gold)
     pred, gold = cleaner.clean_stanza()
-    Evaluate_Model(tok, pred, gold)
+    Evaluate_Model(pred, gold)
+
+def run_baseline_BERTje(path):
+    r = Read(path)
+    bio_obj = r.from_tsv()
+    print('Running baseline bertje model')
+    a = Run_Models(bio_obj)
+    tok, pred, gold = a.run_baseline_bertje()
+    print('Writing to file')
+    outputter = Write_Output_to_File(tok, pred, gold)
+    writepath = "model_results/baseline_bertje_"+path.split('/')[-1].rstrip('.txt')+".tsv"
+    outputter.to_tsv(writepath)
+    cleaner = Clean_Model_Output(pred, gold)
+    pred, gold = cleaner.clean_bertje()
+    Evaluate_Model(pred, gold)
 
 def main(path):
     '''Performs experiment'''
     print("Running Flair")
     # run_flair(path)
     print("Running Stanza")
-    run_stanza(path)
+    run_baseline_BERTje(path)
     
 if __name__ == '__main__':
     train = ''
