@@ -204,10 +204,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("train_path", type = str, help = 'The path to use for finetuning')
     parser.add_argument("eval_path", type = str, help = 'The path on which each epoch is evaluated')
-    parser.add_argument("--epochs", type = int, help = 'The amount of iterations to train over the whole training data on', nargs = '?', const = 12)
-    parser.add_argument("--batch_size", type = int, help = 'The size of each batch that will be taken into account when finetuning BERTje', nargs = '?', const = 12)
+    parser.add_argument("-e","--epochs", type = int, help = 'The amount of iterations to train over the whole training data on', nargs = '?', const = 1, default = 8)
+    parser.add_argument("-b","--batch_size", type = int, help = 'The size of each batch that will be taken into account when finetuning BERTje', nargs = '?', const = 1, default = 4)
     args = parser.parse_args()
     main(args.train_path, args.eval_path, args.epochs, args.batch_size)
-    
     
     
