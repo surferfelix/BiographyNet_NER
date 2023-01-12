@@ -13,6 +13,7 @@ from seqeval.metrics import f1_score, precision_score, recall_score, classificat
 from transformers.utils.dummy_pt_objects import BertModel
 from ner_systems import Clean_Model_Output, Evaluate_Model
 import csv
+import sys
 
 
 logger = logging.getLogger(__name__)
@@ -91,28 +92,21 @@ def data_to_tensors(dataset: List, tokenizer: BertTokenizer, max_len: int, label
     for i, sentence in enumerate(dataset):
         # Get WordPiece Indices
         if labels and label2index:
+            # print(i, sentence)
+            print(sentence)
+            print(labels[i])
             wordpieces, labelset = expand_to_wordpieces(sentence, tokenizer, labels[i])
             label_indices.append([label2index.get(lbl, pad_token_label_id) for lbl in labelset])
         else:
              wordpieces, labelset = expand_to_wordpieces(sentence, tokenizer, None)
         input_ids = tokenizer.convert_tokens_to_ids(wordpieces)
-        tokenized_sentences.append(input_ids)
+        tokenized_sentences.append(wordpieces)
 
     seq_lengths = [len(s) for s in tokenized_sentences]
-    t = 0
-    # for s in tokenized_sentences:
-    #     if len(s) > 10000:
-    #         print(s)
-    #         t+=1
-    #         # for wordpiece in s:
-    #             # print(wordpiece)
-    # print('This occurs:',t, 'times')
-    # for i, s in enumerate(tokenized_sentences):
-    #     if i < 100:
-    #         assert type(s) == list, f"{s} does not appear to be a list"
-    #         print(i, s)
-    #     else:
-    #         break
+    debug = [s for s in tokenized_sentences if len(s) > 10000]
+    for sentence in debug:
+        print(sentence)
+            
     logger.info(f"MAX TOKENIZED SEQ LENGTH IN DATASET IS {max(seq_lengths)}")
     # PAD ALL SEQUENCES
     input_ids = pad_sequences(tokenized_sentences, maxlen=max_len, dtype="long", value=0, truncating="post", padding="post")
@@ -155,31 +149,39 @@ def add_to_label_dict(labels:List, label_dict: Dict) -> Dict:
 
 
 def read_conll(filename: str, delimiter: str='\t', has_labels: bool=True) -> Tuple[List, List, Dict]:
+    # import pandas as pd
+    csv.field_size_limit(sys.maxsize)
     print('Reading CONLL style data')
     all_sentences, all_labels, buffer_lst = [], [], []
     label_dict = {}
-    with open(filename, 'r', errors='replace') as f:
-        for line in f.readlines():
-            row = line.strip('\n').split(delimiter)
+    buffer_lst = []
+    # df = pd.read_csv(filename, names = ['tok', 'gold'])
+    with open(filename, 'r') as f:
+        reader = csv.reader(f, delimiter = delimiter, quotechar = "|")
+        for row in reader:
             if len(row) > 1:
                 buffer_lst.append(row)
             else:
                 sent, labels = get_annotatated_sentence(buffer_lst, has_labels)
                 buffer_lst = []
                 all_sentences.append(sent)
-                if len(labels) > 0: 
-                    all_labels.append(labels)
-                    label_dict = add_to_label_dict(labels, label_dict)
-
-        if len(buffer_lst) > 0:
-            sent, labels = get_annotatated_sentence(buffer_lst, has_labels)
-            all_sentences.append(sent)
-            if labels: 
+                # if len(labels) > 0:
                 all_labels.append(labels)
                 label_dict = add_to_label_dict(labels, label_dict)
+
+    if len(buffer_lst) > 0:
+        sent, labels = get_annotatated_sentence(buffer_lst, has_labels)
+        all_sentences.append(sent)
+        if labels: 
+            all_labels.append(labels)
+            label_dict = add_to_label_dict(labels, label_dict)
     
     logger.info("Read {} Sentences!".format(len(all_sentences)))
     print(label_dict)
+    print('CHECKING')
+    for sents, labs in zip(all_sentences, all_labels):
+        assert len(sents) == len(labs), f'DEBUG, {sents}, {labs}'
+
     return all_sentences, all_labels, label_dict
 
 
