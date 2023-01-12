@@ -23,7 +23,7 @@ class Read_Data_as_df():
     
     def process(self): # TODO Need to get it to 
         d = pd.read_csv(self.data, delimiter = "\t", encoding = 'unicode_escape', names = ['token', 'gold'])
-        print(d.head())
+        # print(d.head())
 
 class FineTune_On_Dataframe():
     """Finetunes pre-trained BERTje on dataframe data"""

@@ -62,7 +62,8 @@ def expand_to_wordpieces(original_sentence: List, tokenizer: BertTokenizer, orig
     word_pieces = tokenizer.tokenize(txt_sentence)
     e = 0
     if original_labels:
-        assert len(original_labels) == len(original_sentence), f"Original label {len(original_labels)} size not the same as original sentence size: {len(original_sentence)}"
+        assert len(original_labels) == len(original_sentence), f"""Original label {len(original_labels)} size not the same
+         as original sentence size: {len(original_sentence)}, \n {original_labels} \n {original_sentence}"""
         tmp_labels, lbl_ix = [], 0
         head_tokens = [1] * len(word_pieces)
         for i, tok in enumerate(word_pieces):
@@ -98,6 +99,20 @@ def data_to_tensors(dataset: List, tokenizer: BertTokenizer, max_len: int, label
         tokenized_sentences.append(input_ids)
 
     seq_lengths = [len(s) for s in tokenized_sentences]
+    t = 0
+    # for s in tokenized_sentences:
+    #     if len(s) > 10000:
+    #         print(s)
+    #         t+=1
+    #         # for wordpiece in s:
+    #             # print(wordpiece)
+    # print('This occurs:',t, 'times')
+    # for i, s in enumerate(tokenized_sentences):
+    #     if i < 100:
+    #         assert type(s) == list, f"{s} does not appear to be a list"
+    #         print(i, s)
+    #     else:
+    #         break
     logger.info(f"MAX TOKENIZED SEQ LENGTH IN DATASET IS {max(seq_lengths)}")
     # PAD ALL SEQUENCES
     input_ids = pad_sequences(tokenized_sentences, maxlen=max_len, dtype="long", value=0, truncating="post", padding="post")
@@ -125,7 +140,7 @@ def get_annotatated_sentence(rows: List, has_labels: bool) -> Tuple[List, List]:
         if has_labels:
             tok, ent_bio = row
             x.append(tok)
-            y.append(ent_bio)
+            y.append(ent_bio.rstrip('\n').rstrip('\\r'))
         else:
             tok, _ = row
             x.append(tok)
@@ -164,7 +179,7 @@ def read_conll(filename: str, delimiter: str='\t', has_labels: bool=True) -> Tup
                 label_dict = add_to_label_dict(labels, label_dict)
     
     logger.info("Read {} Sentences!".format(len(all_sentences)))
-    print(all_sentences, all_labels, label_dict)
+    print(label_dict)
     return all_sentences, all_labels, label_dict
 
 

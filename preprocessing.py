@@ -86,16 +86,17 @@ class Preprocess():
                     p = []
         
         ### Writing the file
-            print(all_sents)
-            print(all_labels)
+            print('Writing file')
+            # print(all_sents)
+            # print(all_labels)
         with open(self.path_in, 'w') as f:
             writer = csv.writer(f, delimiter = '\t', quotechar = "|")
             for s1, s2 in zip(all_sents, all_labels):
                 if s1 and s2:
                     writer.writerow([]) # Empty line for each new sentence
-                    print("\n")
+                    # print("\n")
                 for tok, lab in zip(s1,s2): # Each token in the sentence
-                    print(tok, lab)
+                    # print(tok, lab)
                     writer.writerow([tok, lab])
                     
 if __name__ == '__main__':
