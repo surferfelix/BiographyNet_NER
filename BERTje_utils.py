@@ -100,7 +100,7 @@ def data_to_tensors(dataset: List, tokenizer: BertTokenizer, max_len: int, label
         else:
              wordpieces, labelset = expand_to_wordpieces(sentence, tokenizer, None)
         input_ids = tokenizer.convert_tokens_to_ids(wordpieces)
-        tokenized_sentences.append(wordpieces)
+        tokenized_sentences.append(input_ids)
 
     seq_lengths = [len(s) for s in tokenized_sentences]
     debug = [s for s in tokenized_sentences if len(s) > 10000]
@@ -246,7 +246,9 @@ def evaluate_bert_model(eval_dataloader: DataLoader, eval_batch_size: int, model
     # TODO Refactor
     # print('\nCONTENTS:\n')
     assert len(full_word_preds) == len(gold_label_list), 'Sentence Lengths misaligned'
-    write_and_evaluate_output(full_word_preds, gold_label_list, pred_label_list)
+    results = write_and_evaluate_output(full_word_preds, gold_label_list, pred_label_list)
+    results['loss'] = eval_loss
+    return results
     # print(full_word_preds)
     # print(f"Gold label list:\n{gold_label_list}")
     # print(f"Pred label list:\n{pred_label_list}")
@@ -282,7 +284,8 @@ def write_and_evaluate_output(full_word_preds, gold_label_list, pred_label_list)
     # Cleaning the right labels out
     cleaner = Clean_Model_Output(all_golds, all_preds)
     pred, gold = cleaner.clean_bertje() # by doing this we only get the per and loc labels
-    Evaluate_Model(pred, gold)
+    results = Evaluate_Model(pred, gold)
+    return results
     
             
     

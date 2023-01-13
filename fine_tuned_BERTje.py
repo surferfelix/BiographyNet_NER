@@ -42,7 +42,7 @@ class FineTune_On_Dataframe():
         self.batch_size = batch_size
         self.train_data_path = train_path
         self.dev_data_path = eval_path
-        self.save_model_dir = "../saved_models"
+        self.save_model_dir = "saved_models"
         self.LABELS_FILENAME = f"{self.save_model_dir}/label2index.json"
         self.LOSS_TRN_FILENAME = f"{self.save_model_dir}/Losses_Train_{self.epochs}.json"
         self.LOSS_DEV_FILENAME = f"{self.save_model_dir}/Losses_Dev_{self.epochs}.json"
@@ -176,12 +176,12 @@ class FineTune_On_Dataframe():
             # After the completion of each training epoch, measure our performance on our validation set.
             t0 = time.time()
             # This will write the results to a file
-            utils.evaluate_bert_model(dev_dataloader, self.batch_size, model, tokenizer, index2label, self.PAD_TOKEN_LABEL_ID, prefix="Validation Set")
-            # loss_dev_values.append(results['loss'])
-            # logging.info("  Validation Loss: {0:.2f}".format(results['loss']))
-            # logging.info("  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['precision']*100, results['recall']*100, results['f1']*100))
-            # logging.info("  Validation took: {:}".format(utils.format_time(time.time() - t0)))
-
+            results = utils.evaluate_bert_model(dev_dataloader, self.batch_size, model, tokenizer, index2label, self.PAD_TOKEN_LABEL_ID, prefix="Validation Set")
+            loss_dev_values.append(results['loss'])
+            logging.info("  Validation Loss: {0:.2f}".format(results['loss']))
+            logging.info("Macro avg:  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['macro avg']['precision']*100, results['macro avg']['recall']*100, results['macro avg']['f1-score']*100))
+            logging.info("Weighted avg:  Precision: {0:.2f} || Recall: {1:.2f} || F1: {2:.2f}".format(results['weighted avg']['precision']*100, results['weighted avg']['recall']*100, results['weighted avg']['f1-score']*100))
+            logging.info("  Validation took: {:}".format(utils.format_time(time.time() - t0)))
 
             # Save Checkpoint for this Epoch
             utils.save_model(f"{self.save_model_dir}/EPOCH_{epoch_i}", {"args":[]}, model, tokenizer)
