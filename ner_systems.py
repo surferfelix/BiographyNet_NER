@@ -169,9 +169,10 @@ def Evaluate_Model(pred, gold):
         pred (_type_): _description_
         gold (_type_): _description_
     """
-    report = classification_report(y_true = gold, y_pred = pred)
-    print(report)
-        
+    report = classification_report(y_true = gold, y_pred = pred, output_dict = True)
+    for k, v in report.items():
+        print(f"{k}: v")
+    return report        
 
 def run_flair(path):
     r = Read(path)
