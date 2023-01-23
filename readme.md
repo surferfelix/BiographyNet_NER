@@ -41,6 +41,19 @@ tokenizer = AutoTokenizer.from_pretrained('surferfelix/ner-bertje-tagdetekst')
 model = AutoModelForTokenClassification.from_pretrained('surferfelix/ner-bertje-tagdetekst')
 ```
 
-Note that this uses AutoTokenizer, which is a generic tokenizer. For potentially better performance we can suggest setting this to:
+Note that this uses AutoTokenizer, which is a generic tokenizer. For potentially better performance we can suggest setting this to a Dutch tokenizer that is a BertTokenizer instance such as "GroNLP/bert-base-dutch-cased" from @wietsedv 
 
-`tokenizer = BertTokenizer.from_pretrained('GroNLP/bert-base-dutch-cased')`
+
+## Citations
+
+```
+@misc{devries2019bertje,
+	title = {{BERTje}: {A} {Dutch} {BERT} {Model}},
+	shorttitle = {{BERTje}},
+	author = {de Vries, Wietse  and  van Cranenburgh, Andreas  and  Bisazza, Arianna  and  Caselli, Tommaso  and  Noord, Gertjan van  and  Nissim, Malvina},
+	year = {2019},
+	month = dec,
+	howpublished = {arXiv:1912.09582},
+	url = {http://arxiv.org/abs/1912.09582},
+}
+```
