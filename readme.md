@@ -1,6 +1,6 @@
 # NER Classification on old Biographical Texts
 
-This library includes several NLU models that are used for applying Named Entity Recognition on older Biographical texts from the 18th-20th centuries. Additionally we explore the effects of finetuning a BERT model on older data to explore whether it adapts to the domain. 
+This library includes several NLU models that are used for applying Named Entity Recognition in the Dutch language on older Biographical texts from the 18th-20th centuries. Additionally we explore the effects of finetuning a BERT model on older data to explore whether it adapts to the domain. 
 
 The model evaluates the following NLU systems for NER on our data:
 - Stanza
@@ -30,3 +30,14 @@ Finetuning this BERTje model on other data can be easily done with the following
 `python fine_tuned_BERTje.py {TRAIN_PATH}, {EVAL_PATH}, -e {EPOCHS}, -b {BATCH_SIZE}`
 
 where epochs and batch size are optional arguments, with default epochs being 8, and default batch size being 4
+
+## Load our model from Transformers
+
+For easy implementation, this model has been uploaded to huggingface. You can use it for your own purposes with the following code-block. 
+
+```
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+
+tokenizer = AutoTokenizer.from_pretrained('surferfelix/ner-bertje-tagdetekst')
+model = AutoModelForTokenClassification.from_pretrained('surferfelix/ner-bertje-tagdetekst')
+```
