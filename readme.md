@@ -31,13 +31,16 @@ Finetuning this BERTje model on other data can be easily done with the following
 
 where epochs and batch size are optional arguments, with default epochs being 8, and default batch size being 4
 
-# Load our model from Transformers
+# Load the model from Transformers
 
 For easy implementation, this model has been uploaded to huggingface. You can use it for your own purposes with the following code-block. 
-
 ```
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 tokenizer = AutoTokenizer.from_pretrained('surferfelix/ner-bertje-tagdetekst')
 model = AutoModelForTokenClassification.from_pretrained('surferfelix/ner-bertje-tagdetekst')
 ```
+
+Note that this uses AutoTokenizer, which is a generic tokenizer. For potentially better performance we can suggest setting this to:
+
+`tokenizer = BertTokenizer.from_pretrained('GroNLP/bert-base-dutch-cased')`
