@@ -3,11 +3,13 @@ we only use PER and LOC labels because all models classify these, which allows u
 comparisons"""
 import stanza
 from visualize_stuff import Read  # We import the read module here so we don't need to rebuild it.
-from flair.data import Sentence
-from flair.models import SequenceTagger
+# from flair.data import Sentence
+# from flair.models import SequenceTagger
 from sklearn.metrics import classification_report
 import csv
 import BERTje_model as model
+import finetuned_BERTje as ft_model 
+from itertools import chain
 # Because sentencepiece in flair does not support python=3.10 yet, we had to change to python version 3.9
 # Flair 0.11 does not output to_tagged_string properly, issue noted and project reverted to flair 0.10 for now
 
@@ -51,7 +53,6 @@ class Run_Models():
 
     def run_stanza(self):
         ''':return: token, pred, gold'''
-        # TODO Implement global variables here as well
         nlp = stanza.Pipeline(lang = "nl", processors= 'tokenize, ner', tokenize_pretokenized=True)
         gold = [word['label'] for dct in self.bio_obj for word in dct['text_entities']]
         tokens = []
@@ -75,6 +76,33 @@ class Run_Models():
                     self.preds.append(g)
         return self.tokens, self.preds, self.gold
 
+
+    def discover_alignment_issues(self):
+        print('AssertionError, finding alignment problem')
+        t = list(chain(self.bio_obj['text_sents']))
+        g = self.preds
+        for i, (a, b) in enumerate(zip(t,g)):
+            print(i, a, b)
+            if a != b:
+                print(f'ISSUE AT {i}, {a} {b}')
+                break
+
+    def run_finetuned_bertje(self):
+        for dct in self.bio_obj:
+            for s in dct["text_sents"]:
+                sentence = ' '.join(s)
+                tokens, labels = ft_model.run_finetuned_BERT_aligned(sentence)
+                for t,g in zip(tokens, labels):
+                    self.tokens.append(t)
+                    self.preds.append(g)
+        try:
+            assert len(self.gold) == len(self.tokens), f'Will not be able to write file with correct alignment {len(self.gold)}, {len(self.preds)}'
+        except AssertionError:
+            self.discover_alignment_issues()
+            for a,b in zip(self.tokens, self.gold):
+                print(a,b)
+        return self.tokens, self.preds, self.gold
+
     def to_file(self, path = '', name = ''):
         print(set(self.preds))
         print(set(self.gold))
@@ -90,7 +118,6 @@ class Write_Output_to_File():
             writer = csv.writer(f, delimiter='\t', quotechar = "|")
             for a, b, c in zip(self.tok, self.pred, self.gold):
                 writer.writerow([a,b,c])
-
 
 class Clean_Model_Output():
     """Will clean out all tags other than PER and LOC"""
@@ -158,8 +185,6 @@ class Clean_Model_Output():
             else:
                 clean_gold.append('O')
         return clean_pred, clean_gold
-            
-
 
 def Evaluate_Model(pred, gold):
     """_summary_
@@ -171,7 +196,7 @@ def Evaluate_Model(pred, gold):
     """
     report = classification_report(y_true = gold, y_pred = pred, output_dict = True)
     for k, v in report.items():
-        print(f"{k}: v")
+        print(f"{k}: {v}")
     return report        
 
 def run_flair(path):
@@ -214,16 +239,35 @@ def run_baseline_BERTje(path):
     pred, gold = cleaner.clean_bertje()
     Evaluate_Model(pred, gold)
 
+def run_finetuned_BERTje(path):
+    print('Reading path')
+    r = Read(path)
+    bio_obj = r.from_tsv()
+    print('Running finetuned bertje model')
+    a = Run_Models(bio_obj)
+    tok, pred, gold = a.run_finetuned_bertje()
+    print('Writing to file')
+    outputter = Write_Output_to_File(tok, pred, gold)
+    writepath = "model_results/finetuned_bertje_"+path.split('/')[-1].rstrip('.txt')+".tsv"
+    outputter.to_tsv(writepath)
+    cleaner = Clean_Model_Output(pred, gold)
+    pred, gold = cleaner.clean_bertje()
+    Evaluate_Model(pred, gold)
+
 def main(path):
     '''Performs experiment'''
     print("Running Flair")
-    # run_flair(path)
+    run_flair(path)
     print("Running Stanza")
+    run_stanza(path)
+    print('Running Baseline BERTje')
     run_baseline_BERTje(path)
+    print('Running finetuned BERTje')
+    run_finetuned_BERTje(path)
+    print('Success! Experiment complete')
     
 if __name__ == '__main__':
-    train = ''
-    dev = '../data/train/AITrainingset1.0/Data/test_NHA.txt'
-    test = ''
-    validate = ''
-    main(dev)
+    test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt",
+                        "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"]
+    for path in test_on_partitions:
+        main(path)
