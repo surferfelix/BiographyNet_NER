@@ -18,8 +18,8 @@ class Preprocess():
         all_labels = []
         text = []
         ### Reading the file
-        with open(self.path_in, encoding = "windows-1252") as f:
-            reader = csv.reader(f, delimiter="\t", quotechar = "|")
+        with open(self.path_in, encoding = "utf-8") as f:
+            reader = csv.reader(f, delimiter="\t")
             print('Processing full text, this might take a while:')
             for row in reader:
                 if row:
@@ -99,6 +99,49 @@ class Preprocess():
                     # print(tok, lab)
                     writer.writerow([tok, lab])
                     
+    def for_biographynet_test_partition(self, path_out):
+        """Here we apply a heuristic to sentencize the partition"""
+        # Each document starts with a commented line ## TextID = ID
+        # and a blank line at end of document to seperate them
+        # For each token that is a period, check if next token starts with uppercase
+        all_labels = []
+        full_text = []
+        all_sents = []
+        label_sents = []
+        with open(self.path_in) as f:
+            infile = f.readlines()
+            print('Storing data in memory')
+            for i, line in enumerate(infile):
+                if line.startswith('##'):
+                    continue
+                row = line.rstrip('\n').split('\t')
+                if len(row) > 1 and i+1 <= len(infile):
+                    token = row[0]
+                    label = row[1]
+                    all_labels.append(label)
+                    full_text.append(token)
+            print('Finding sentences...')
+            self.nlp.add_pipe('sentencizer')
+            doc = Doc(self.nlp.vocab, full_text)
+            for sentence in self.nlp(doc).sents:
+                slist = []
+                for i, tokens in enumerate(sentence):
+                    slist.append(tokens)
+                    if i == len(sentence)-1:
+                        all_sents.append(slist)
+            
+        ### Writing the file
+        with open(path_out, 'w') as f:
+            writer = csv.writer(f, delimiter = '\t', quotechar = "|")
+            label_fetch = 0
+            for lst in all_sents:
+                writer.writerow([]) # Empty line for each new sentence
+                for t in lst: # Each token in the sentence
+                    token = t.text
+                    label = all_labels[label_fetch]
+                    writer.writerow([token, label])
+                    label_fetch+=1
+    
 if __name__ == '__main__':
     # train_dir = "../data/train/AITrainingset1.0/Data"
     # for path in os.listdir(train_dir):
@@ -107,6 +150,7 @@ if __name__ == '__main__':
     #         path_out = f"../data/train/AITrainingset1.0/Clean_Data/{path_in.split('/')[-1].rstrip('.txt')}_cleaned.txt"
     #         nlp = Preprocess(path_in)
     #         nlp.sentence_tokenize(path_out)
-    d = '../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt'
-    nlp = Preprocess(d)
-    a = nlp.remove_single_token_sentences()
+    p_in = '../data/test/biographynet_test_A_gold.tsv'
+    p_out = '../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv'
+    nlp = Preprocess(p_in)
+    a = nlp.for_biographynet_test_partition(p_out)
