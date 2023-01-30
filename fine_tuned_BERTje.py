@@ -28,11 +28,12 @@ class Read_Data_as_df():
 class FineTune_On_Dataframe():
     """Finetunes pre-trained BERTje on dataframe data"""
     
-    def __init__(self, train_path: str, eval_path: str, epochs=12, batch_size=8):
+    def __init__(self, train_path: str, eval_path: str, epochs=12, batch_size=8, model_path = 'GroNLP/bert-base-dutch-cased'):
         '''We initialize all hyperparameters here'''
         # TODO Maybe move these variables to a main, since it would be cleaner
+        print(f'Model set to {model_path}')
         self.epochs = epochs
-        self.model_name = "GroNLP/bert-base-dutch-cased"
+        self.model_name = model_path
         self.gpu_run_ix = 0
         self.seed_val = 1234500 # For reproducability
         self.seq_max_len = 256
@@ -193,9 +194,9 @@ class FineTune_On_Dataframe():
         logging.info("Training complete!")
 
 
-def main(train_path:str, eval_path: str, epochs: int, batch_size: int):
+def main(train_path:str, eval_path: str, epochs: int, batch_size: int, model_path = str):
     """Executes the Fine Tuning process"""
-    a = FineTune_On_Dataframe(train_path, eval_path, epochs, batch_size) # We initialize our hyperparameters
+    a = FineTune_On_Dataframe(train_path, eval_path, epochs, batch_size, model_path) # We initialize our hyperparameters
     train_label2index, index2label, train_dataloader, dev_dataloader, tokenizer = a.Load_Datasets() # We load our dev and train data
     model, optimizer, scheduler = a.Initialize_Model_Components(train_label2index, index2label, train_dataloader) # We initialize the components
     a.Fine_Tune(model, train_dataloader, dev_dataloader, optimizer, scheduler, tokenizer, index2label)
@@ -206,7 +207,8 @@ if __name__ == '__main__':
     parser.add_argument("eval_path", type = str, help = 'The path on which each epoch is evaluated')
     parser.add_argument("-e","--epochs", type = int, help = 'The amount of iterations to train over the whole training data on', nargs = '?', const = 1, default = 8)
     parser.add_argument("-b","--batch_size", type = int, help = 'The size of each batch that will be taken into account when finetuning BERTje', nargs = '?', const = 1, default = 4)
+    parser.add_argument("-p","--model_path", type = str, help = 'Optional argument for if you want to finetune another BERT model', default = 'GroNLP/bert-base-dutch-cased', required = False)
     args = parser.parse_args()
-    main(args.train_path, args.eval_path, args.epochs, args.batch_size)
+    main(args.train_path, args.eval_path, args.epochs, args.batch_size, args.model_path)
     
     

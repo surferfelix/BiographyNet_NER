@@ -3,8 +3,8 @@ we only use PER and LOC labels because all models classify these, which allows u
 comparisons"""
 import stanza
 from visualize_stuff import Read  # We import the read module here so we don't need to rebuild it.
-# from flair.data import Sentence
-# from flair.models import SequenceTagger
+from flair.data import Sentence
+from flair.models import SequenceTagger
 from sklearn.metrics import classification_report
 import csv
 import BERTje_model as model
@@ -254,20 +254,60 @@ def run_finetuned_BERTje(path):
     pred, gold = cleaner.clean_bertje()
     Evaluate_Model(pred, gold)
 
+def evaluate_only(path):
+    '''This will only run the evaluation, but will not train any model'''
+    r=Read(path)
+    clean_pred = []
+    clean_gold = []
+    preds, golds = r.as_eval_file()
+    assert len(preds) == len(golds), 'Something went wrong with reading, length of preds not the same as golds.'
+    
+    #STANZA preprocessing
+
+    for i, e in zip(preds, golds):
+        if i.endswith('LOC') or i.endswith('PER'):
+            clean_pred.append(i)
+        else:
+            clean_pred.append('O')
+        if e.endswith('LOC') or e.endswith('PER'):
+            clean_gold.append(e)
+        else:
+            clean_gold.append('O')
+
+    #BASELINE BERTJE preprocessing
+    # for i, e in zip(preds, golds):
+    #         if i.upper().endswith('LOC') or i.upper().endswith('PER'):
+    #             clean_pred.append(i.upper())
+    #         else:
+    #             clean_pred.append('O')
+    #         if e.upper().endswith('LOC') or e.upper().endswith('PER'):
+    #             clean_gold.append(e.upper())
+    #         else:
+    #             clean_gold.append('O')
+
+    
+    Evaluate_Model(clean_pred, clean_gold)
+
 def main(path):
     '''Performs experiment'''
-    print("Running Flair")
-    run_flair(path)
-    print("Running Stanza")
-    run_stanza(path)
-    print('Running Baseline BERTje')
-    run_baseline_BERTje(path)
-    print('Running finetuned BERTje')
-    run_finetuned_BERTje(path)
-    print('Success! Experiment complete')
+    # print("Running Flair")
+    # run_flair(path)
+    # print("Running Stanza")
+    # run_stanza(path)
+    # print('Running Baseline BERTje')
+    # run_baseline_BERTje(path)
+    # print('Running finetuned BERTje')
+    # run_finetuned_BERTje(path)
+    # print('Success! Experiment complete')
+    evaluate_only(path)
     
 if __name__ == '__main__':
-    test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt",
-                        "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"]
-    for path in test_on_partitions:
+    # test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"] 
+    # # "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt",
+    # for path in test_on_partitions:
+    #     main(path)
+    evaluate_on_partitions = ["model_results/stanza_test_NHA_cleaned.tsv", "model_results/stanza_test_SA_cleaned.tsv"
+                            "model_results/stanza_test_RHC_cleaned.tsv"]
+    for path in evaluate_on_partitions:
+        print(path)
         main(path)

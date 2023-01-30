@@ -9,7 +9,7 @@ import numpy as np
 import json, datetime, os
 from transformers.utils import logging
 import logging, re
-from seqeval.metrics import f1_score, precision_score, recall_score, classification_report
+from sklearn.metrics import f1_score, precision_score, recall_score, classification_report
 from transformers.utils.dummy_pt_objects import BertModel
 from ner_systems import Clean_Model_Output, Evaluate_Model
 import csv
