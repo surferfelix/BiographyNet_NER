@@ -29,7 +29,11 @@ Finetuning this BERTje model on other data can be easily done with the following
 
 `python fine_tuned_BERTje.py {TRAIN_PATH}, {EVAL_PATH}, -e {EPOCHS}, -b {BATCH_SIZE}`
 
-where epochs and batch size are optional arguments, with default epochs being 8, and default batch size being 4
+where epochs and batch size are optional arguments, with default epochs being 8, and default batch size being 4.
+
+If you would like to finetune another model you can add the -p argument to specify a path to a local pytorch model directory or to a huggingface repository.
+
+`python fine_tuned_BERTje.py {TRAIN_PATH}, {EVAL_PATH}, -e {EPOCHS}, -b {BATCH_SIZE}, -p {MODEL_DIRECTORY}`
 
 # Load the model from Transformers
 
