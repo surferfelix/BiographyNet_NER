@@ -56,7 +56,29 @@ class Read:
                 elif not row and s: # If not row we clear s
                     dct['text_sents'].append(s)
                     s = []
+            dct['text_sents'].append(s)
         return ret
+    
+    def as_eval_file(self):
+        """_summary_
+        When reading a file for evaluation purposes only. 
+        Returns:
+            tuple: Will instead of a bio object, return a tuple with preds and golds.
+        """
+        import csv
+        import sys
+        preds, golds = [], []
+        with open(self.path, encoding = 'utf-8') as file:
+            csv.field_size_limit(sys.maxsize)
+            infile = csv.reader(file, delimiter='\t', quotechar='|')
+            for row in infile:
+                assert len(row) == 3, f'Can not evaluate on row {row}'
+                if row:
+                    pred = row[1]
+                    gold = row[2]
+                    preds.append(pred)
+                    golds.append(gold)
+        return preds, golds
 
 class Counter:
     """Will count instances of key in obj and return a new dictionary object"""

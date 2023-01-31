@@ -45,7 +45,19 @@ class Preprocess():
                     label = all_labels[label_fetch]
                     writer.writerow([token, label])
                     label_fetch+=1
-    
+
+    def find_amount_of_sentences(self):
+            '''This is just another analysis tool to help find the amount of sentences'''
+            scount = 0
+            with open(self.path_in) as f:
+                infile = f.readlines()
+                for line in infile:
+                    line = line.rstrip('\n')
+                    if not line:
+                        scount+=1
+            print(f'we found {scount} sentences!')
+            return scount
+
     def check_double_empties(self):
         bad_indexes = []
         csv.field_size_limit(sys.maxsize)
@@ -141,7 +153,7 @@ class Preprocess():
                     label = all_labels[label_fetch]
                     writer.writerow([token, label])
                     label_fetch+=1
-    
+
 if __name__ == '__main__':
     # train_dir = "../data/train/AITrainingset1.0/Data"
     # for path in os.listdir(train_dir):
@@ -150,7 +162,13 @@ if __name__ == '__main__':
     #         path_out = f"../data/train/AITrainingset1.0/Clean_Data/{path_in.split('/')[-1].rstrip('.txt')}_cleaned.txt"
     #         nlp = Preprocess(path_in)
     #         nlp.sentence_tokenize(path_out)
-    p_in = '../data/test/biographynet_test_A_gold.tsv'
-    p_out = '../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv'
-    nlp = Preprocess(p_in)
-    a = nlp.for_biographynet_test_partition(p_out)
+
+    # p_in = '../data/test/biographynet_test_A_gold.tsv'
+    # p_out = '../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv'
+
+    paths = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt", 
+           "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/train_cleaned_cleaned_2.txt", "../data/train/AITrainingset1.0/Clean_Data/validation_cleaned.txt"]
+    for path in paths:
+        nlp = Preprocess(path)
+        print('Looking at, :', path)
+        a = nlp.find_amount_of_sentences()

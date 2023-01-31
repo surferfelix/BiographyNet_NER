@@ -69,8 +69,7 @@ class Run_Models():
         for dct in self.bio_obj:
             for s in dct["text_sents"]:
                 sentence = ' '.join(s)
-                example, ner_results = model.run_BERTje(sentence)
-                tokens, labels = model.map_tokens_to_entities(example, ner_results)
+                tokens, labels = model.run_baseline_BERT_aligned(sentence)
                 for t,g in zip(tokens, labels):
                     self.tokens.append(t)
                     self.preds.append(g)
@@ -294,20 +293,17 @@ def main(path):
     # run_flair(path)
     # print("Running Stanza")
     # run_stanza(path)
-    # print('Running Baseline BERTje')
-    # run_baseline_BERTje(path)
-    # print('Running finetuned BERTje')
-    # run_finetuned_BERTje(path)
-    # print('Success! Experiment complete')
-    evaluate_only(path)
+    print('Running Baseline BERTje')
+    run_baseline_BERTje(path)
+    print('Running finetuned BERTje')
+    run_finetuned_BERTje(path)
+    # evaluate_only(path)
     
 if __name__ == '__main__':
-    # test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"] 
-    # # "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt",
-    # for path in test_on_partitions:
-    #     main(path)
-    evaluate_on_partitions = ["model_results/stanza_test_NHA_cleaned.tsv", "model_results/stanza_test_SA_cleaned.tsv"
-                            "model_results/stanza_test_RHC_cleaned.tsv"]
-    for path in evaluate_on_partitions:
-        print(path)
+    test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt",
+                            "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt", "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
+    for path in test_on_partitions:
+        print('THIS IS FOR:', path)
         main(path)
+    print('Success! Experiment complete')
+    
