@@ -39,24 +39,44 @@ class Read:
         import csv
         import sys
         ret = [{'text_entities': [], 'text_tokens': [], 'text_sents': []}] # We need to add text sents
-        with open(self.path, encoding='windows-1252') as file:
-            csv.field_size_limit(sys.maxsize)
-            infile = csv.reader(file, delimiter='\t', quotechar='|')
-            # TODO Issue here is that we want to chain B I I tags together
-            s = [] # Container to hold sentence objects
-            for row in infile:
-                if row: # We skip sentence endings here, so we need to remember to see if we want it back later
-                    word = row[0]
-                    label = row[1]
-                    info = {'text': word, 'label': label}
-                    for dct in ret:
-                        dct['text_entities'].append(info)
-                        dct['text_tokens'].append(word)
-                        s.append(word) 
-                elif not row and s: # If not row we clear s
-                    dct['text_sents'].append(s)
-                    s = []
-            dct['text_sents'].append(s)
+        try:
+            with open(self.path, encoding='windows-1252') as file:
+                csv.field_size_limit(sys.maxsize)
+                infile = csv.reader(file, delimiter='\t', quotechar='|')
+                # TODO Issue here is that we want to chain B I I tags together
+                s = [] # Container to hold sentence objects
+                for row in infile:
+                    if row: # We skip sentence endings here, so we need to remember to see if we want it back later
+                        word = row[0]
+                        label = row[1]
+                        info = {'text': word, 'label': label}
+                        for dct in ret:
+                            dct['text_entities'].append(info)
+                            dct['text_tokens'].append(word)
+                            s.append(word) 
+                    elif not row and s: # If not row we clear s
+                        dct['text_sents'].append(s)
+                        s = []
+                dct['text_sents'].append(s)
+        except UnicodeDecodeError:
+               with open(self.path, encoding='utf-8') as file:
+                csv.field_size_limit(sys.maxsize)
+                infile = csv.reader(file, delimiter='\t', quotechar='|')
+                # TODO Issue here is that we want to chain B I I tags together
+                s = [] # Container to hold sentence objects
+                for row in infile:
+                    if row: # We skip sentence endings here, so we need to remember to see if we want it back later
+                        word = row[0].strip('\\r')
+                        label = row[1].strip('\\r')
+                        info = {'text': word, 'label': label}
+                        for dct in ret:
+                            dct['text_entities'].append(info)
+                            dct['text_tokens'].append(word)
+                            s.append(word) 
+                    elif not row and s: # If not row we clear s
+                        dct['text_sents'].append(s)
+                        s = []
+                dct['text_sents'].append(s)
         return ret
     
     def as_eval_file(self):
@@ -478,8 +498,20 @@ def generate_barplot_from_scores(bio):
 
 
 if __name__ == '__main__':
-    path = '../data/full/AllBios.jsonl'
-    create_popular_entity_wordclouds_for_all_bios(path)
+    paths = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", '../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt',
+            "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/train_cleaned_cleaned_2.txt", "../data/train/AITrainingset1.0/Clean_Data/validation_cleaned.txt"]
+    for path in paths:
+        out_path = f"barplots/{path.split('/')[-1].rstrip('.txt')}_barplot.png"
+        bio_obj = Read(path).from_tsv()
+        print(bio_obj[0].keys())
+        counts = Counter(bio_obj, 'text_entities').from_bio_obj()
+        clean = {}
+        for key, value in counts.items():
+            if not key == 'O':
+                clean[key] = value
+        print(path.split('/')[-1])
+        print(clean)
+        Visualize(clean, out_path).as_barplot()
     # path = '../data/full/AllBios.jsonl'
     # a= Read(path)
     # bio_obj = a.from_file()

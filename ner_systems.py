@@ -98,8 +98,8 @@ class Run_Models():
             assert len(self.gold) == len(self.tokens), f'Will not be able to write file with correct alignment {len(self.gold)}, {len(self.preds)}'
         except AssertionError:
             self.discover_alignment_issues()
-            for a,b in zip(self.tokens, self.gold):
-                print(a,b)
+            # for a,b in zip(self.tokens, self.gold):
+                # print(a,b)
         return self.tokens, self.preds, self.gold
 
     def to_file(self, path = '', name = ''):
@@ -295,8 +295,9 @@ def main(path):
     # run_stanza(path)
     print('Running Baseline BERTje')
     run_baseline_BERTje(path)
-    print('Running finetuned BERTje')
-    run_finetuned_BERTje(path)
+    # print('Running finetuned BERTje')
+    # run_finetuned_BERTje(path)
+    # print('Evaluating...')
     # evaluate_only(path)
     
 if __name__ == '__main__':
@@ -306,4 +307,10 @@ if __name__ == '__main__':
         print('THIS IS FOR:', path)
         main(path)
     print('Success! Experiment complete')
-    
+    # evaluate_on_partitions = ["model_results/finetuned_bertje_test_NHA_cleaned.tsv", "model_results/finetuned_bertje_test_SA_cleaned.tsv",
+    #                         "model_results/finetuned_bertje_test_RHC_cleaned.tsv", "model_results/finetuned_bertje_biographynet_test_A_gold_cleaned.tsv.tsv",
+    #                         "model_results/baseline_bertje_test_NHA_cleaned.tsv", "model_results/baseline_bertje_test_SA_cleaned.tsv", 
+    #                         "model_results/baseline_bertje_test_RHC_cleaned.tsv", "model_results/baseline_bertje_biographynet_test_A_gold_cleaned.tsv.tsv"] #NHA SA RHC
+    # for path in evaluate_on_partitions:
+    #     print(path)
+    #     main(path)
