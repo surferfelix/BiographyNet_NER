@@ -100,6 +100,42 @@ class Read:
                     golds.append(gold)
         return preds, golds
 
+    def log_for_graphing_losses(self, key = 'losses'):
+        cleaned_training_losses = {key: []}
+        with open(self.path) as f:
+            inf = f.readlines()
+            start_grabbing = False
+            epoch_number = 0
+            epoch_holder = [] # Container to store losses with respect to the epoch
+            for index, line in enumerate(inf):
+                loss = line.split()[-1]
+                if line.startswith('INFO:root:======== Epoch'):
+                    if not line.startswith("INFO:root:======== Epoch 1 / 8 ========"):
+                        epoch_number+=1
+                        dct = {f"epoch_{epoch_number}": epoch_holder}
+                        cleaned_training_losses[key].append(dct)
+                        epoch_holder = []
+                if loss == 'INFO:root:Training...':
+                    start_grabbing = True
+                if loss == 'INFO:root:':
+                    start_grabbing = False
+                if start_grabbing:
+                    if not 'nan' in loss:
+                        try:
+                            epoch_holder.append(float(loss[:5]))
+                        except ValueError: # This happens when we find info line
+                            continue
+                    else:
+                        continue
+            epoch_number+=1
+            dct = {f"epoch_{epoch_number}": epoch_holder}
+            cleaned_training_losses[key].append(dct)
+        print('\nInspection of cleaned training losses')
+        for lst in cleaned_training_losses.values():
+            for epoch in lst:
+                print(epoch.keys())
+        return cleaned_training_losses
+
 class Counter:
     """Will count instances of key in obj and return a new dictionary object"""
     # Example Counter(bio_obj, 'named_entities') -> {PER: 113}
@@ -137,7 +173,6 @@ class Interpret:
             infile = f.readlines()
             for line in infile:
                 stopwords.add(line.rstrip('\n'))
-        # print(f"Removing stopwords\n{stopwords}")
         counter_obj = dict()
         for dct in self.obj:
             for token in dct['text_tokens']:
@@ -163,7 +198,7 @@ class Interpret:
         return res
     
     def popular_locations(self, n: int):
-        "Will print n most popular persons in bio_object"
+        "Will print n most popular locations in bio_object"
         counter_obj = dict()
         for dct in self.obj:
             for lst in dct['text_entities']:
@@ -176,7 +211,7 @@ class Interpret:
         return res
 
     def popular_time(self, n: int):
-        "Will print n most popular persons in bio_object"
+        "Will print n most popular times in bio_object"
         counter_obj = dict()
         for dct in self.obj:
             for lst in dct['text_entities']:
@@ -202,7 +237,7 @@ class Interpret:
         return res
     
     def popular_misc(self, n: int):
-        "Will print n most popular persons in bio_object"
+        "Will print n most popular miscs in bio_object"
         counter_obj = dict()
         for dct in self.obj:
             for lst in dct['text_entities']:
@@ -311,8 +346,8 @@ class Visualize:
         :type obj: dict
         :type path: string
         :path: path to write to'''
-    def __init__(self, obj: dict, path: str):
-        self.path = path
+    def __init__(self, obj: dict, out_path: str):
+        self.path = out_path
         self.obj = obj
     
     def as_donut(self):
@@ -496,31 +531,90 @@ def generate_barplot_from_scores(bio):
     vis = Visualize(gendict, writepath)
     vis.as_barplot()
 
+def visualize_loss_logs(loss_dicts, writepath = 'line_graphs/test_plot.png'):
+    assert type(loss_dicts) == list, 'Please put it in a list first :)'
+    n = 0
+    keys = []
+    for dct in loss_dicts:
+        print(str(dct.keys()))
+        label = str(dct.keys())
+        x_values = []
+        y_values = []
+        n+=1
+        x=0
+        for key, value in dct.items():
+            print(key)
+            for epoch in value:
+                x += 1
+                all_values = epoch[f'epoch_{x}']
+                print(sum(all_values), len(all_values))
+                y = sum(all_values, 0)/len(all_values)
+                print(max(all_values))
+                x_values.append(x)
+                y_values.append(y)
+        
+        # Plotting
+        palette = plt.get_cmap('Set1')
+        # plt.subplot(3,3, n)
+        
+        # Not ticks everywhere
+        if n in range(9):
+            plt.tick_params(labelbottom='off')
+        if n not in [1,2,4,6,8] :
+            plt.tick_params(labelleft='off')
 
+        plt.plot(x_values, y_values, color = palette(n), label = label[11:-2])   
+        plt.xlim(1,8)
+        plt.ylim(0,2)
+    plt.legend()
+    plt.savefig(writepath)
+    
+                # plt.plot( 'x_values', 'y1_values', data=df, marker='o', markerfacecolor='blue', markersize=12, color='skyblue', linewidth=4)
 if __name__ == '__main__':
-    paths = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", '../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt',
-            "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/train_cleaned_cleaned_2.txt", "../data/train/AITrainingset1.0/Clean_Data/validation_cleaned.txt"]
-    for path in paths:
-        out_path = f"barplots/{path.split('/')[-1].rstrip('.txt')}_barplot.png"
-        bio_obj = Read(path).from_tsv()
-        print(bio_obj[0].keys())
-        counts = Counter(bio_obj, 'text_entities').from_bio_obj()
-        clean = {}
-        for key, value in counts.items():
-            if not key == 'O':
-                clean[key] = value
-        print(path.split('/')[-1])
-        print(clean)
-        Visualize(clean, out_path).as_barplot()
-    # path = '../data/full/AllBios.jsonl'
-    # a= Read(path)
-    # bio_obj = a.from_file()
-    # b = Interpret(bio_obj)
-    # bio_obj_2 = b.concatenate_bios()
-    # print(bio_obj)
-            
-    # c = Interpret(bio_obj_2)
-    # ranked = c.count_word_rank()
+    p = 'saved_models/all_models_felix/saved_models_bertje_1234500/BERT_TokenClassifier_train_8.log'
+    models = []
+    results = []
+    trained_models_path = 'saved_models/all_models_felix'
+    for d in os.listdir(trained_models_path):
+        if not d.startswith('.'):
+            model_name = '_'.join(d.split('_')[-2:])
+            models.append(model_name)
+            print(f'Going to {model_name}')
+            for file in os.listdir(f"{trained_models_path}/{d}"):
+                if file.endswith('8.log') and not file.startswith('.'):
+                    loss_file = f"{trained_models_path}/{d}/{file}"
+            print('Reading file:', loss_file)
+            res = Read(loss_file).log_for_graphing_losses(model_name)
+            results.append(res)
+    visualize_loss_logs(results)
 
-    # vis = Visualize(ranked, f"wordclouds/WordCloud_AllBios.png")
-    # vis.as_wordcloud()
+
+
+    # paths = ["../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
+    # for path in paths:
+    #     out_path = f"wordclouds/{path.split('/')[-1].rstrip('.txt')}_wordcloud.png"
+    #     bio_obj = Read(path).from_tsv()
+    #     new_bio = Interpret(bio_obj).concatenate_bios()
+    #     answer = Interpret(new_bio).count_word_rank()
+    #     done = Visualize(answer, out_path).as_wordcloud()
+    #     print('Files made')
+
+
+# Other useful scripts 
+
+    # Count for each label
+    # paths = ["../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
+    # for path in paths:
+    #     bio_obj = Read(path).from_tsv()
+    #     ans = Counter(bio_obj, 'text_entities').from_bio_obj()
+    #     cleaned = {a:b for a,b in ans.items() if 'LOC' in a or 'PER' in a}
+    #     print(cleaned)
+
+    # Wordclouds
+    # for path in paths:
+    #     out_path = f"wordclouds/{path.split('/')[-1].rstrip('.txt')}_wordcloud.png"
+    #     bio_obj = Read(path).from_tsv()
+    #     new_bio = Interpret(bio_obj).concatenate_bios()
+    #     answer = Interpret(new_bio).count_word_rank()
+    #     done = Visualize(answer, out_path).as_wordcloud()
+    #     print('Files made')

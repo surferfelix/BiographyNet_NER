@@ -166,8 +166,7 @@ if __name__ == '__main__':
     # p_in = '../data/test/biographynet_test_A_gold.tsv'
     # p_out = '../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv'
 
-    paths = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt", 
-           "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/train_cleaned_cleaned_2.txt", "../data/train/AITrainingset1.0/Clean_Data/validation_cleaned.txt"]
+    paths = ["../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
     for path in paths:
         nlp = Preprocess(path)
         print('Looking at, :', path)

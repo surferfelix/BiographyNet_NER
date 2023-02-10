@@ -301,6 +301,7 @@ def main(path):
     # evaluate_only(path)
     
 if __name__ == '__main__':
+    # test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt"]
     test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt",
                             "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt", "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
     for path in test_on_partitions:
