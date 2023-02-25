@@ -7,10 +7,10 @@ import logging, re
 import torch
 from collections import Counter
 
-def load_model():
+def load_model(model_path = 'surferfelix/ner-bertje-tagdetekst', tokenizer_path = 'GroNLP/bert-base-dutch-cased'):
     # Load a trained model and vocabulary that you have fine-tuned
-    model = BertForTokenClassification.from_pretrained("surferfelix/ner-bertje-tagdetekst")
-    tokenizer = BertTokenizer.from_pretrained("GroNLP/bert-base-dutch-cased")
+    model = BertForTokenClassification.from_pretrained(model_path)
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
     return model, tokenizer
 
 def run_finetuned_BERT_aligned(s, label_list = ['O', 'B-PER', 'I-PER', 'B-TIME', 'I-TIME', 'B-LOC', 'I-LOC']):

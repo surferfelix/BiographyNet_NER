@@ -28,11 +28,11 @@ class Read:
         return bio_obj
 
     def from_file(self) -> list: # For the full evaluation set
-        bio_obj = []
+
         with open(self.path, 'r') as json_file:
             for line in json_file:
-                bio_obj.append(json.loads(line)) #Appending dict to list
-        return bio_obj
+                yield json.loads(line) # Change this to yield because of amendability downline
+        
 
     def from_tsv(self) -> list: # For the training data
         # word\tlabel --> [{text_entities: [{text: word, label: label}]}]
@@ -122,7 +122,8 @@ class Read:
                 if start_grabbing:
                     if not 'nan' in loss:
                         try:
-                            epoch_holder.append(float(loss[:5]))
+                            # Convert from string and scientific notation
+                            epoch_holder.append(float(loss.rstrip('.')))
                         except ValueError: # This happens when we find info line
                             continue
                     else:
@@ -136,26 +137,35 @@ class Read:
                 print(epoch.keys())
         return cleaned_training_losses
 
+    def from_json(self):
+        with open(self.path) as f:
+            a = json.load(f)
+        return a
+
+
+
 class Counter:
-    """Will count instances of key in obj and return a new dictionary object"""
-    # Example Counter(bio_obj, 'named_entities') -> {PER: 113}
-    # TODO: Make this counter object
+    """Will count instances of key in obj and return a new dictionary object
+    Example Counter(bio_obj, 'named_entities') -> {PER: 113}"""
     
     def __init__(self, obj, key):
         self.obj = obj
         self.key = key
     
-    def from_bio_obj(self):
-        '''Takes bio_obj and returns a counter dict'''
+    def from_bio_obj(self, exclude = False):
+        '''Takes bio_obj and returns a counter dict
+        Exlude is a variable for which you can exlude certain values'''
         # This currently just works for the 'text_entities' key
         counter_obj = dict()
         # assert type(self.obj[self.key] == list), 'We need to iterate through a list of strings :('
         for i, lst in enumerate(self.obj):
             for dct in lst[self.key]:
                 if dct['label'] in counter_obj:
-                    counter_obj[dct['label']] += 1
+                    if not dct['label'] == exclude:
+                        counter_obj[dct['label']] += 1
                 else:
-                    counter_obj[dct['label']] = 1
+                    if not dct['label'] == exclude:
+                        counter_obj[dct['label']] = 1
         return counter_obj
 
 class Interpret:
@@ -428,15 +438,22 @@ class Visualize:
             sources.append(tup[0])
             values.append(tup[1])
 
+        total = sum(values)
+        percentage = [(val/total)*100 for val in values]
+
         x_pos = np.arange(len(sources))
 
         # Create bars
-        plt.bar(x_pos, values)
-
+        # Modify the default style of matplotlib
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['lightcoral'])
+        plt.bar(x_pos, values, width = 0.5)
         # Create names on the x-axis
-        plt.xticks(x_pos, sources, color='orange', rotation = 90)
-        plt.yticks(color='orange')
-        plt.subplots_adjust(bottom=0.4, top = 0.99)
+        for i, v in enumerate(percentage):
+            plt.text(i+.5, values[i]+.9, f"pct = {v:.2f}%", fontsize=7, ha='right', color='black', va = 'bottom')
+        plt.xticks(x_pos, sources, color='black', rotation = 90)
+        plt.yticks(color='black')
+        plt.subplots_adjust(bottom=.2, top = .9)
+        plt.title('Named Entities in Train Partition')
         plt.savefig(self.path)
 
 
@@ -531,7 +548,7 @@ def generate_barplot_from_scores(bio):
     vis = Visualize(gendict, writepath)
     vis.as_barplot()
 
-def visualize_loss_logs(loss_dicts, writepath = 'line_graphs/test_plot.png'):
+def visualize_loss_logs(loss_dicts: list, writepath = 'line_graphs/test_plot.png'):
     assert type(loss_dicts) == list, 'Please put it in a list first :)'
     n = 0
     keys = []
@@ -543,15 +560,16 @@ def visualize_loss_logs(loss_dicts, writepath = 'line_graphs/test_plot.png'):
         n+=1
         x=0
         for key, value in dct.items():
-            print(key)
+            print('\n', key, '\n')
             for epoch in value:
                 x += 1
                 all_values = epoch[f'epoch_{x}']
-                print(sum(all_values), len(all_values))
-                y = sum(all_values, 0)/len(all_values)
-                print(max(all_values))
-                x_values.append(x)
-                y_values.append(y)
+                try:
+                    y = sum(all_values, 0)/len(all_values)
+                    x_values.append(x)
+                    y_values.append(y)
+                except ZeroDivisionError:
+                    pass
         
         # Plotting
         palette = plt.get_cmap('Set1')
@@ -562,31 +580,103 @@ def visualize_loss_logs(loss_dicts, writepath = 'line_graphs/test_plot.png'):
             plt.tick_params(labelbottom='off')
         if n not in [1,2,4,6,8] :
             plt.tick_params(labelleft='off')
-
+        print('Created x and y values: plotting')
+        print(x_values)
+        print(y_values)
         plt.plot(x_values, y_values, color = palette(n), label = label[11:-2])   
         plt.xlim(1,8)
-        plt.ylim(0,2)
+        plt.ylim(0,.35)
+    plt.title('Training losses for all models')
+    plt.xlabel('Epochs')
+    plt.ylabel('Losses')
     plt.legend()
     plt.savefig(writepath)
-    
-                # plt.plot( 'x_values', 'y1_values', data=df, marker='o', markerfacecolor='blue', markersize=12, color='skyblue', linewidth=4)
-if __name__ == '__main__':
-    p = 'saved_models/all_models_felix/saved_models_bertje_1234500/BERT_TokenClassifier_train_8.log'
+
+def graph_validation_losses_from_json(loss_list):
+    '''Loss list should contain the jsons with losses'''
+    # Containers
+    x_values = []
+    y_values = []
+    n = 0
+    writepath = 'line_graphs/validation_loss_plot.png'
+    # Opening all the files:
+    for path in loss_list:
+        n+=1
+        label = path.split('/')[-2]
+        x_values = []
+        y_values = []
+        with open(path) as f:
+            dct = json.load(f)
+            for x, y in enumerate(dct['losses'], start = 1):
+                x_values.append(x)
+                y_values.append(y)
+                print(x, y)
+        palette = plt.get_cmap('Set1')
+        plt.plot(x_values, y_values, color = palette(n), label = label[13:])   
+    plt.xlim(1,8)
+    plt.ylim(0,.43)
+    plt.title('Validation losses for all models')
+    plt.xlabel('Epochs')
+    plt.ylabel('Losses')
+    plt.legend()
+    plt.savefig(writepath)
+
+def visualize_losses_from_model_directory(trained_models_path = 'saved_models/all_models_felix'):
     models = []
     results = []
-    trained_models_path = 'saved_models/all_models_felix'
+    trained_models_path = trained_models_path
     for d in os.listdir(trained_models_path):
         if not d.startswith('.'):
             model_name = '_'.join(d.split('_')[-2:])
             models.append(model_name)
             print(f'Going to {model_name}')
-            for file in os.listdir(f"{trained_models_path}/{d}"):
+            print(d)
+            ndir = os.listdir(f"{trained_models_path}/{d}")
+            print(ndir)
+            for file in ndir:
                 if file.endswith('8.log') and not file.startswith('.'):
                     loss_file = f"{trained_models_path}/{d}/{file}"
             print('Reading file:', loss_file)
             res = Read(loss_file).log_for_graphing_losses(model_name)
             results.append(res)
     visualize_loss_logs(results)
+
+def visualize_confusion_matrix_from_results(path):
+    import seaborn as sns
+    from sklearn.metrics import confusion_matrix
+    from ner_systems import Clean_Model_Output
+    predictions, gold = Read(path).as_eval_file()
+    predictions, gold = Clean_Model_Output(predictions, gold).clean_flair()
+    labels = list(set(predictions))
+    matrix = confusion_matrix(predictions, gold, labels = labels)
+    print(matrix)
+    fig = sns.heatmap(matrix, annot = True, xticklabels=labels, 
+        yticklabels=labels, fmt = 'g', cmap = 'Blues', vmin = 0, vmax = 900)
+    figure = fig.get_figure()
+    newpath = f"matrices/{path.split('/')[-1].rstrip('.tsv')}_cf_matrix.png"
+    figure.savefig(newpath, dpi=400)
+
+if __name__ == '__main__':
+    bio_pbj = Read('../data/full/AllBios.jsonl').from_file()
+    count = Counter(bio_pbj, 'text_entities').from_bio_obj(exclude = 'O')
+    Visualize(count, 'barplots/bio_cleaned_count').as_barplot()
+
+#This is for graphing losses
+
+    # paths = []
+    # trained_models_path = 'saved_models/all_models_felix'
+    # for d in os.listdir(trained_models_path):
+    #     if not d.startswith('.'):
+    #         ndir = os.listdir(f"{trained_models_path}/{d}")
+    #         for file in ndir:
+    #             print(file)
+    #             if file.startswith('Losses_Dev') and not file.startswith('.'):
+    #                 loss_file = f"{trained_models_path}/{d}/{file}"
+    #                 paths.append(loss_file)
+    # graph_validation_losses_from_json(paths)
+
+    # p = 'saved_models/all_models_felix/saved_models_bertje_1234500/BERT_TokenClassifier_train_8.log'
+
 
 
 

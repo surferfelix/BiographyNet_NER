@@ -1,5 +1,6 @@
 
 import spacy
+from visualize_stuff import Read
 from spacy.pipeline.senter import DEFAULT_SENTER_MODEL
 from spacy.tokens import Doc
 import os
@@ -154,7 +155,41 @@ class Preprocess():
                     writer.writerow([token, label])
                     label_fetch+=1
 
+def organize_sample_for_annotation(path):
+    """Selects a random sample for annotation purposes"""
+    from random import sample
+    selected_texts = []
+    for dct in Read(path).from_file(): # Reading from generator object
+        if not 'bioport' in dct['source']:
+            original_dct = dct['death_tm']
+            if isinstance(original_dct, str):
+                if len(original_dct) > 0:
+                    cleaned = dct['death_tm'][0:4].strip('.').strip('~').strip("'").strip('"').strip()
+                    try:
+                        if int(cleaned) < 1800:
+                            text = dct['text_clean']
+                            if len(text) > 300:
+                                selected_texts.append(text)
+                    except ValueError:
+                        continue
+    selection = sample(selected_texts, k = 5)
+    print(f'Selected 5 from total of {len(selected_texts)}')
+    with open('samples/old_bio_portal_selection.txt', 'w') as f:
+        f.write('\n'.join(selection))
+    return "\n".join(selection)
+
+def write_as_conll(selection):
+    import csv
+    writepath = "selection_old_biographies_mod.conll"
+    tokens = selection.split(' ')
+    with open(writepath, 'w') as write:
+        writer = csv.writer(write, delimiter = '\t')    
+        for token in tokens:
+            writer.writerow([token, "O"])
+
 if __name__ == '__main__':
+    selection = organize_sample_for_annotation("../data/full/AllBios.jsonl")
+    write_as_conll(selection)
     # train_dir = "../data/train/AITrainingset1.0/Data"
     # for path in os.listdir(train_dir):
     #     if not path.startswith('.') and path.endswith('txt'):
@@ -166,8 +201,8 @@ if __name__ == '__main__':
     # p_in = '../data/test/biographynet_test_A_gold.tsv'
     # p_out = '../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv'
 
-    paths = ["../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
-    for path in paths:
-        nlp = Preprocess(path)
-        print('Looking at, :', path)
-        a = nlp.find_amount_of_sentences()
+    # paths = ["../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
+    # for path in paths:
+    #     nlp = Preprocess(path)
+    #     print('Looking at, :', path)
+    #     a = nlp.find_amount_of_sentences()

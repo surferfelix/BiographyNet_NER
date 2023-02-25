@@ -9,6 +9,7 @@ from sklearn.metrics import classification_report
 import csv
 import BERTje_model as model
 import finetuned_BERTje as ft_model 
+import gysbert_model as gysbert
 from itertools import chain
 # Because sentencepiece in flair does not support python=3.10 yet, we had to change to python version 3.9
 # Flair 0.11 does not output to_tagged_string properly, issue noted and project reverted to flair 0.10 for now
@@ -101,6 +102,22 @@ class Run_Models():
             # for a,b in zip(self.tokens, self.gold):
                 # print(a,b)
         return self.tokens, self.preds, self.gold
+    
+    def run_finetuned_gysbert(self):
+        for dct in self.bio_obj:
+            for s in dct["text_sents"]:
+                sentence = ' '.join(s)
+                tokens, labels = gysbert.run_finetuned_BERT_aligned(sentence)
+                for t,g in zip(tokens, labels):
+                    self.tokens.append(t)
+                    self.preds.append(g)
+        try:
+            assert len(self.gold) == len(self.tokens), f'Will not be able to write file with correct alignment {len(self.gold)}, {len(self.preds)}'
+        except AssertionError:
+            self.discover_alignment_issues()
+            # for a,b in zip(self.tokens, self.gold):
+                # print(a,b)
+        return self.tokens, self.preds, self.gold
 
     def to_file(self, path = '', name = ''):
         print(set(self.preds))
@@ -119,7 +136,8 @@ class Write_Output_to_File():
                 writer.writerow([a,b,c])
 
 class Clean_Model_Output():
-    """Will clean out all tags other than PER and LOC"""
+    """Will clean out all tags other than PER and LOC
+    Returns new pred and gold"""
     def __init__(self, pred, gold):
         self.pred = pred
         self.gold = gold
@@ -129,20 +147,38 @@ class Clean_Model_Output():
         clean_pred = []
         clean_gold = []
         # Cleaning the predictions {'<I-ORG>', '<E-PER>', '<S-MISC>', 'O', '<S-ORG>', '<B-PER>', '<I-MISC>', '<I-LOC>', '<S-LOC>', '<S-PER>', '<E-MISC>', '<B-MISC>', '<E-LOC>', '<B-ORG>', '<I-PER>', '<B-LOC>', '<E-ORG>'}
+        i_locs = ['I-LOC', 'E-LOC']
+        b_locs = ['B-LOC', 'S-LOC']
+        i_pers = ['I-PER', 'E-PER']
+        b_pers = ['B-PER', 'S-PER']
         for label in self.pred:
-            if label.endswith('LOC>'):
-                clean_pred.append('LOC')
-            elif label.endswith('PER>'):
-                clean_pred.append('PER')
-            elif label == 'O':
-                clean_pred.append(label)
+            clabel = label.lstrip('<').rstrip('>')
+            if clabel in i_locs:
+                pred = 'I-LOC'
+            elif clabel in b_locs:
+                pred = 'B-LOC'
+            elif clabel in i_pers:
+                pred = 'I-PER'
+            elif clabel in b_pers:
+                pred = 'B-PER'
             else:
-                clean_pred.append('O')
+                pred = 'O'
+            clean_pred.append(pred)
+            # if any([label.endswith(i) for i in i_locs]):
+            #     clean_pred.append('I-LOC')
+            # elif any([label.endswith(b) for b in b_locs]):
+            #     clean_pred.append('B-LOC')
+            # elif label.endswith('PER>'):
+            #     clean_pred.append('PER')
+            # elif label == 'O':
+            #     clean_pred.append(label)
+            # else:
+            #     clean_pred.append('O')
         # Cleaning the GOLD {'B-TIME', 'B-PER', 'O', 'I-LOC', 'B-LOC', 'I-TIME', 'I-PER'}
         for label in self.gold:
             if label.endswith('LOC') or label.endswith('PER'):
                 # print('Adding slice', label[2:5])
-                clean_gold.append(label[2:5])
+                clean_gold.append(label)
             else:
                 clean_gold.append('O')
         # assert len(clean_gold) == len(clean_pred), 'Gold size is different than pred size'
@@ -161,12 +197,16 @@ class Clean_Model_Output():
         clean_pred = []
         clean_gold = []
         for i, e in zip(self.pred, self.gold):
+            if i.startswith('E'):
+                i = f"I-{i[-3:]}"
+            elif i.startswith('S'):
+                i = f"B-{i[-3:]}"
             if i.endswith('LOC') or i.endswith('PER'):
-                clean_pred.append(i[-3:])
+                clean_pred.append(i)
             else:
                 clean_pred.append('O')
             if e.endswith('LOC') or e.endswith('PER'):
-                clean_gold.append(e[-3:])
+                clean_gold.append(e)
             else:
                 clean_gold.append('O')
         return clean_pred, clean_gold
@@ -193,7 +233,8 @@ def Evaluate_Model(pred, gold):
         pred (_type_): _description_
         gold (_type_): _description_
     """
-    report = classification_report(y_true = gold, y_pred = pred, output_dict = True)
+    labels = [i for i in set(pred) if not i == 'O']
+    report = classification_report(y_true = gold, y_pred = pred, output_dict = True, labels = labels)
     for k, v in report.items():
         print(f"{k}: {v}")
     return report        
@@ -253,6 +294,21 @@ def run_finetuned_BERTje(path):
     pred, gold = cleaner.clean_bertje()
     Evaluate_Model(pred, gold)
 
+def run_gysbert(path):
+    print('Reading path')
+    r = Read(path)
+    bio_obj = r.from_tsv()
+    print('Running finetuned gysbert model')
+    a = Run_Models(bio_obj)
+    tok, pred, gold = a.run_finetuned_bertje()
+    print('Writing to file')
+    outputter = Write_Output_to_File(tok, pred, gold)
+    writepath = "model_results/finetuned_gysbert_"+path.split('/')[-1].rstrip('.txt')+".tsv"
+    outputter.to_tsv(writepath)
+    cleaner = Clean_Model_Output(pred, gold)
+    pred, gold = cleaner.clean_bertje()
+    Evaluate_Model(pred, gold)
+
 def evaluate_only(path):
     '''This will only run the evaluation, but will not train any model'''
     r=Read(path)
@@ -260,58 +316,32 @@ def evaluate_only(path):
     clean_gold = []
     preds, golds = r.as_eval_file()
     assert len(preds) == len(golds), 'Something went wrong with reading, length of preds not the same as golds.'
-    
-    #STANZA preprocessing
-
-    for i, e in zip(preds, golds):
-        if i.endswith('LOC') or i.endswith('PER'):
-            clean_pred.append(i)
-        else:
-            clean_pred.append('O')
-        if e.endswith('LOC') or e.endswith('PER'):
-            clean_gold.append(e)
-        else:
-            clean_gold.append('O')
-
-    #BASELINE BERTJE preprocessing
-    # for i, e in zip(preds, golds):
-    #         if i.upper().endswith('LOC') or i.upper().endswith('PER'):
-    #             clean_pred.append(i.upper())
-    #         else:
-    #             clean_pred.append('O')
-    #         if e.upper().endswith('LOC') or e.upper().endswith('PER'):
-    #             clean_gold.append(e.upper())
-    #         else:
-    #             clean_gold.append('O')
-
-    
+    clean_pred, clean_gold = Clean_Model_Output(preds, golds).clean_stanza()
     Evaluate_Model(clean_pred, clean_gold)
 
 def main(path):
-    '''Performs experiment'''
+    # '''Performs experiment'''
     # print("Running Flair")
     # run_flair(path)
     # print("Running Stanza")
     # run_stanza(path)
-    print('Running Baseline BERTje')
-    run_baseline_BERTje(path)
+    # print('Running Baseline BERTje')
+    # run_baseline_BERTje(path)
     # print('Running finetuned BERTje')
     # run_finetuned_BERTje(path)
+    print('Running GijsBERT')
+    run_gysbert(path)
+    print('Done')
     # print('Evaluating...')
     # evaluate_only(path)
     
 if __name__ == '__main__':
-    # test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt"]
-    test_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt",
-                            "../data/train/AITrainingset1.0/Clean_Data/test_RHC_cleaned.txt", "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv"]
-    for path in test_on_partitions:
-        print('THIS IS FOR:', path)
+    run_on_partitions = ['../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv', '../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt',
+    "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"]
+    # test_on_partitions = ["model_results/stanza_biographynet_test_A_gold_cleaned.tsv.tsv"]
+    # for path in test_on_partitions:
+    #     print('THIS IS FOR:', path)
+    for path in run_on_partitions:
         main(path)
-    print('Success! Experiment complete')
-    # evaluate_on_partitions = ["model_results/finetuned_bertje_test_NHA_cleaned.tsv", "model_results/finetuned_bertje_test_SA_cleaned.tsv",
-    #                         "model_results/finetuned_bertje_test_RHC_cleaned.tsv", "model_results/finetuned_bertje_biographynet_test_A_gold_cleaned.tsv.tsv",
-    #                         "model_results/baseline_bertje_test_NHA_cleaned.tsv", "model_results/baseline_bertje_test_SA_cleaned.tsv", 
-    #                         "model_results/baseline_bertje_test_RHC_cleaned.tsv", "model_results/baseline_bertje_biographynet_test_A_gold_cleaned.tsv.tsv"] #NHA SA RHC
-    # for path in evaluate_on_partitions:
-    #     print(path)
-    #     main(path)
+    # print('Success! Experiment complete')
+
