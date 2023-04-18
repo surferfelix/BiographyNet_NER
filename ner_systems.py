@@ -67,10 +67,11 @@ class Run_Models():
         return tokens, labels, gold
 
     def run_baseline_bertje(self):
+        bert, tokenizer = model.load_model()
         for dct in self.bio_obj:
             for s in dct["text_sents"]:
                 sentence = ' '.join(s)
-                tokens, labels = model.run_baseline_BERT_aligned(sentence)
+                tokens, labels = model.run_baseline_BERTje(sentence, bert, tokenizer)
                 for t,g in zip(tokens, labels):
                     self.tokens.append(t)
                     self.preds.append(g)
@@ -91,6 +92,7 @@ class Run_Models():
         for dct in self.bio_obj:
             for s in dct["text_sents"]:
                 sentence = ' '.join(s)
+                print(sentence)
                 tokens, labels = ft_model.run_finetuned_BERT_aligned(sentence)
                 for t,g in zip(tokens, labels):
                     self.tokens.append(t)
@@ -214,13 +216,14 @@ class Clean_Model_Output():
     def clean_bertje(self):
         clean_pred = []
         clean_gold = []
+        assert len(self.pred) == len(self.gold), 'Pred and gold mismatch'
         for i, e in zip(self.pred, self.gold):
             if i.upper().endswith('LOC') or i.upper().endswith('PER'):
-                clean_pred.append(i[-3:].upper())
+                clean_pred.append(i.upper())
             else:
                 clean_pred.append('O')
             if e.upper().endswith('LOC') or e.upper().endswith('PER'):
-                clean_gold.append(e[-3:])
+                clean_gold.append(e.upper())
             else:
                 clean_gold.append('O')
         return clean_pred, clean_gold
@@ -300,7 +303,7 @@ def run_gysbert(path):
     bio_obj = r.from_tsv()
     print('Running finetuned gysbert model')
     a = Run_Models(bio_obj)
-    tok, pred, gold = a.run_finetuned_bertje()
+    tok, pred, gold = a.run_finetuned_gysbert()
     print('Writing to file')
     outputter = Write_Output_to_File(tok, pred, gold)
     writepath = "model_results/finetuned_gysbert_"+path.split('/')[-1].rstrip('.txt')+".tsv"
@@ -316,18 +319,18 @@ def evaluate_only(path):
     clean_gold = []
     preds, golds = r.as_eval_file()
     assert len(preds) == len(golds), 'Something went wrong with reading, length of preds not the same as golds.'
-    clean_pred, clean_gold = Clean_Model_Output(preds, golds).clean_stanza()
+    clean_pred, clean_gold = Clean_Model_Output(preds, golds).clean_bertje()
     Evaluate_Model(clean_pred, clean_gold)
 
 def main(path):
-    # '''Performs experiment'''
+    '''Performs experiment'''
     # print("Running Flair")
     # run_flair(path)
     # print("Running Stanza")
     # run_stanza(path)
-    # print('Running Baseline BERTje')
+    print('Running Baseline BERTje')
     # run_baseline_BERTje(path)
-    # print('Running finetuned BERTje')
+    print('Running finetuned BERTje')
     # run_finetuned_BERTje(path)
     print('Running GijsBERT')
     run_gysbert(path)
@@ -336,12 +339,11 @@ def main(path):
     # evaluate_only(path)
     
 if __name__ == '__main__':
-    run_on_partitions = ['../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv', '../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt',
-    "../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"]
-    # test_on_partitions = ["model_results/stanza_biographynet_test_A_gold_cleaned.tsv.tsv"]
-    # for path in test_on_partitions:
-    #     print('THIS IS FOR:', path)
+    run_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", 
+                         "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv", 
+                         "qualitative_eval/biography_selection_middle_dutch.conll", 
+                         "qualitative_eval/biography_selection_modern_dutch.conll"]
     for path in run_on_partitions:
         main(path)
-    # print('Success! Experiment complete')
+    print('Success! Experiment complete')
 
