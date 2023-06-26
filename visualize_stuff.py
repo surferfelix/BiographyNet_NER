@@ -7,6 +7,9 @@ from wordcloud import WordCloud
 import numpy as np
 import spacy
 from spacy.tokens import Doc
+from ner_systems import Clean_Model_Output
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 # Parser
 import argparse
@@ -41,12 +44,15 @@ class Read:
         ret = [{'text_entities': [], 'text_tokens': [], 'text_sents': []}] # We need to add text sents
         try:
             with open(self.path, encoding='windows-1252') as file:
-                csv.field_size_limit(sys.maxsize)
-                infile = csv.reader(file, delimiter='\t', quotechar='|')
-                # TODO Issue here is that we want to chain B I I tags together
+                # csv.field_size_limit(sys.maxsize)
+                # infile = csv.reader(file, delimiter='\t', quotechar='|')
+                infile = file.readlines()
                 s = [] # Container to hold sentence objects
-                for row in infile:
-                    if row: # We skip sentence endings here, so we need to remember to see if we want it back later
+                for line in infile:
+                    row = line.strip().split('\t')
+                    if row == ['']:
+                        row = []
+                    if len(row) > 1: # We skip sentence endings here, so we need to remember to see if we want it back later
                         word = row[0]
                         label = row[1]
                         info = {'text': word, 'label': label}
@@ -62,7 +68,6 @@ class Read:
                with open(self.path, encoding='utf-8') as file:
                 csv.field_size_limit(sys.maxsize)
                 infile = csv.reader(file, delimiter='\t', quotechar='|')
-                # TODO Issue here is that we want to chain B I I tags together
                 s = [] # Container to hold sentence objects
                 for row in infile:
                     if row: # We skip sentence endings here, so we need to remember to see if we want it back later
@@ -496,12 +501,11 @@ def create_popular_entity_wordclouds_for_all_bios(path, ent = 'PER'):
         a = Read(loc)
         bio_obj_1 = a.from_file()
         b = Interpret(bio_obj_1)
+        print(b)
         bio_obj_2 = b.concatenate_bios()
-        # print(bio_obj_1)
-        # print(bio_obj_2)
-        
-        c = Interpret(bio_obj_2)
-        ranked = c.count_word_rank()
+        ranked = Interpret(bio_obj_2).popular_persons(n = 10)
+        print(ranked)
+        # ranked = c.count_word_rank()
 
         vis = Visualize(ranked, f"../wordclouds/WordCloud_Entities_{path.rstrip('.jsonl')}.png")
         vis.as_wordcloud()
@@ -642,25 +646,32 @@ def visualize_losses_from_model_directory(trained_models_path = 'saved_models/al
     visualize_loss_logs(results)
 
 def visualize_confusion_matrix_from_results(path):
-    import seaborn as sns
-    from sklearn.metrics import confusion_matrix
-    from ner_systems import Clean_Model_Output
     predictions, gold = Read(path).as_eval_file()
-    predictions, gold = Clean_Model_Output(predictions, gold).clean_flair()
-    labels = list(set(predictions))
+    predictions, gold = Clean_Model_Output(predictions, gold).clean_bertje()
+    labels = sorted(list(set(predictions)))
     matrix = confusion_matrix(predictions, gold, labels = labels)
     print(matrix)
-    fig = sns.heatmap(matrix, annot = True, xticklabels=labels, 
-        yticklabels=labels, fmt = 'g', cmap = 'Blues', vmin = 0, vmax = 900)
-    figure = fig.get_figure()
+    fig = plt.figure()  # Create a new figure
+    ax = sns.heatmap(matrix, annot=True, xticklabels=labels, yticklabels=labels,
+                     fmt='g', cmap='Blues', vmin=0, vmax=900)
+    ax.set_title('Confusion Matrix')
+    ax.set_xlabel('Predicted Label')
+    ax.set_ylabel('True Label')
+
     newpath = f"matrices/{path.split('/')[-1].rstrip('.tsv')}_cf_matrix.png"
-    figure.savefig(newpath, dpi=400)
+    fig.savefig(newpath, dpi=400)
 
 if __name__ == '__main__':
-    bio_pbj = Read('../data/full/AllBios.jsonl').from_file()
-    count = Counter(bio_pbj, 'text_entities').from_bio_obj(exclude = 'O')
-    Visualize(count, 'barplots/bio_cleaned_count').as_barplot()
+    paths = ["model_results/stanza_test_SA_cleaned.tsv", "model_results/stanza_test_NHA_cleaned.tsv", "model_results/stanza_biographynet_test_A_gold_cleaned.tsv.tsv"]
+    for path in paths:
+        visualize_confusion_matrix_from_results(path)
 
+    # run_on_partitions = ["qualitative_eval/biography_selection_middle_dutch.conll", "qualitative_eval/biography_selection_modern_dutch.conll"]
+    # for path in run_on_partitions:
+    #     bio_obj = Read(path).from_tsv()
+    #     count = Counter(bio_obj, 'text_entities').from_bio_obj()
+    #     print(path)
+    #     print(count)
 #This is for graphing losses
 
     # paths = []

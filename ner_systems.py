@@ -333,16 +333,18 @@ def main(path):
     print('Running finetuned BERTje')
     # run_finetuned_BERTje(path)
     print('Running GijsBERT')
-    run_gysbert(path)
-    print('Done')
-    # print('Evaluating...')
-    # evaluate_only(path)
+    # run_gysbert(path)
+    # print('Done')
+    print('Evaluating...')
+    evaluate_only(path)
     
 if __name__ == '__main__':
-    run_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", 
-                         "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv", 
-                         "qualitative_eval/biography_selection_middle_dutch.conll", 
-                         "qualitative_eval/biography_selection_modern_dutch.conll"]
+    # run_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"]
+    # run_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_NHA_cleaned.txt", 
+    #                      "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv", 
+    #                      "qualitative_eval/biography_selection_middle_dutch.conll", 
+    #                      "qualitative_eval/biography_selection_modern_dutch.conll"]
+    run_on_partitions = ["model_results/finetuned_gysbert_test_SA_cleaned.tsv"]
     for path in run_on_partitions:
         main(path)
     print('Success! Experiment complete')

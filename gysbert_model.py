@@ -7,10 +7,10 @@ import logging, re
 import torch
 from collections import Counter
 
-def load_model(model_path = 'surferfelix/ner-bertje-tagdetekst', tokenizer_path = 'surferfelix/ner-bertje-tagdetekst'):
+def load_model(model_path = 'saved_models/all_models_felix/saved_models_gysbert_1930499/EPOCH_2', tokenizer_path = '../GysBERT-1.5m'):
     # Load a trained model and vocabulary that you have fine-tuned
-    model = AutoModelForTokenClassification.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    model = BertForTokenClassification.from_pretrained(model_path)
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
     return model, tokenizer
 
 def run_finetuned_BERT_aligned(s, label_list = ['O', 'B-PER', 'I-PER', 'B-TIME', 'I-TIME', 'B-LOC', 'I-LOC']):
@@ -105,5 +105,10 @@ def wordpieces_to_tokens(wordpieces: List, labelpieces: List = None) -> Tuple[Li
         assert len(full_words) == len(full_labels)
         print(full_words, full_labels)
     return full_words, full_labels
+
+if __name__ == '__main__':
+    s = ''
+    run_finetuned_BERT_aligned(s)
+
 
 

@@ -159,20 +159,13 @@ def organize_sample_for_annotation(path):
     """Selects a random sample for annotation purposes"""
     from random import sample
     selected_texts = []
+    sources_selection = ['weyerman', 'knaw']
     for dct in Read(path).from_file(): # Reading from generator object
-        if not 'bioport' in dct['source']:
-            original_dct = dct['death_tm']
-            if isinstance(original_dct, str):
-                if len(original_dct) > 0:
-                    cleaned = dct['death_tm'][0:4].strip('.').strip('~').strip("'").strip('"').strip()
-                    try:
-                        if int(cleaned) < 1800:
-                            text = dct['text_clean']
-                            if len(text) > 300:
-                                selected_texts.append(text)
-                    except ValueError:
-                        continue
-    selection = sample(selected_texts, k = 5)
+        if dct['source'] in sources_selection:
+            text = dct['text_clean']
+            if len(text) > 300:
+                selected_texts.append(text)
+    selection = sample(selected_texts, k = 3)
     print(f'Selected 5 from total of {len(selected_texts)}')
     with open('samples/old_bio_portal_selection.txt', 'w') as f:
         f.write('\n'.join(selection))
