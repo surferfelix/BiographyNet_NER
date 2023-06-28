@@ -1,0 +1,577 @@
+R	O
+o	O
+Caze	O
+3	O
+.	O
+
+2	O
+.	O
+
+17	O
+ontvangen	O
+met	O
+de	O
+verhoging	O
+17	O
+.	O
+
+02	O
+agt	O
+guldens	O
+,	O
+twee	O
+Stuivers	O
+07	O
+8	O
+:	O
+2	O
+:	O
+2	O
+:	O
+en	O
+twaalf	O
+penningen	O
+.	O
+
+De	B-PER
+Swart	I-PER
+
+dens	O
+boven	O
+de	O
+Lusten	O
+Verzoeke	O
+van	O
+de	O
+H	O
+.	O
+
+r	O
+
+D	B-PER
+Surangar	I-PER
+
+nog	O
+een	O
+Gezegelde	O
+Kwitie	O
+by	O
+
+het	O
+Mandaat	O
+,	O
+wegens	O
+betaalde	O
+Staats	O
+bladen	O
+,	O
+staats	O
+Couranten	O
+
+Brieveport	O
+
+Eta	O
+in	O
+dato	O
+
+13e	B-TIME
+feb	I-TIME
+:	I-TIME
+1815	I-TIME
+ad	O
+Âƒ70	O
+8	O
+.	O
+
+En	O
+dito	O
+van	O
+31	B-TIME
+Maart	I-TIME
+1815	I-TIME
+wegens	O
+de	O
+Bydragen	O
+ad	O
+5	O
+8	O
+.	O
+
+Gedaan	O
+en	O
+gepasseerd	O
+voor	O
+den	O
+voornoemden	O
+
+Notaris	O
+Mr	O
+.	O
+
+D	O
+.	O
+
+Suringar	O
+op	O
+den	O
+drie	O
+en	O
+Twintigsten	O
+December	O
+
+achttien	O
+
+Hondert	O
+veertien	O
+te	O
+Duurswold	B-LOC
+ten	O
+huize	O
+van	O
+Jan	B-PER
+Binser	I-PER
+
+Beets	I-PER
+ma	B-PER
+in	O
+tegenswoordigheid	O
+van	O
+de	O
+Heer	O
+Bernardus	B-PER
+Brunes	I-PER
+ma	O
+predikant	O
+te	O
+Wytyctem	B-LOC
+en	O
+Eeuwe	B-PER
+Lieuwer	I-PER
+van	I-PER
+Leeuwe	I-PER
+deurwaarder	O
+te	O
+Beetsterzwaag	B-LOC
+getuigen	O
+welke	O
+deeze	O
+benevens	O
+de	O
+Comparanten	O
+
+de	O
+weer	O
+schout	O
+deeze	O
+gemeente	O
+en	O
+den	O
+Notaris	O
+onder	O
+wien	O
+deeze	O
+verbleven	O
+is	O
+hebben	O
+getekend	O
+
+B	B-PER
+:	I-PER
+
+Brandsma	I-PER
+
+derde	O
+en	O
+laatste	O
+
+Ten	O
+tweeden	O
+,	O
+Ida	B-PER
+Alyda	I-PER
+Berns	I-PER
+,	O
+meerder	O
+jarig	O
+;	O
+ten	O
+derden	O
+,	O
+Hendrika	B-PER
+Berns	I-PER
+,	O
+meerderjarig	O
+,	O
+de	O
+twee	O
+laatstgenoemden	O
+zonder	O
+Beroep	O
+woonende	O
+te	O
+Huissen	B-LOC
+,	O
+Dochters	O
+van	O
+genoemden	O
+
+Peter	B-PER
+Berns	I-PER
+
+en	O
+wylen	O
+Hendrina	B-PER
+
+De	B-PER
+Raay	I-PER
+
+;	O
+ten	O
+Vierden	O
+,	O
+Hendrik	B-PER
+Spanbroek	I-PER
+Arbeider	O
+woo	O
+nende	O
+te	O
+Bemmel	B-LOC
+,	O
+in	O
+kwaliteit	O
+van	O
+toeziende	O
+voogd	O
+,	O
+over	O
+genoemde	O
+minderjarige	O
+Petronella	B-PER
+Berns	I-PER
+,	O
+als	O
+daartoe	O
+verkozen	O
+by	O
+een	O
+behoorlijk	O
+Geregistreerd	O
+besluit	O
+van	O
+den	O
+Fa	O
+milieraad	O
+onder	O
+praesidie	O
+van	O
+den	O
+Heere	O
+vrederegter	O
+te	O
+Bem	B-LOC
+mel	B-LOC
+de	O
+dato	O
+
+achtsten	B-TIME
+
+Mei	I-TIME
+achttien	I-TIME
+honderd	I-TIME
+een	I-TIME
+en	I-TIME
+twintig	I-TIME
+.	I-TIME
+
+Door	O
+Jeremias	B-PER
+Jacobus	I-PER
+
+Ernst	I-PER
+Pilgrim	I-PER
+
+openbaar	O
+Notaris	O
+resi	O
+derende	O
+te	O
+Huissen	B-LOC
+,	O
+Kanton	O
+Bemmel	B-LOC
+,	O
+Kwartier	O
+Tiel	B-LOC
+,	O
+Pro	O
+vincie	O
+Gelderland	B-LOC
+,	O
+als	O
+daartoe	O
+gecommitteerd	O
+door	O
+de	O
+Regt	O
+bank	O
+ter	O
+eerster	O
+
+instantie	O
+zitting	O
+houdende	O
+te	O
+Tiel	B-LOC
+,	O
+by	O
+be	O
+hoorlyk	O
+Geregistreerd	O
+vonnis	O
+van	O
+den	O
+negentienden	B-TIME
+Juny	I-TIME
+dezes	B-TIME
+
+Jaars	I-TIME
+,	O
+in	O
+tegenwoordigheid	O
+der	O
+hierna	O
+genoemde	O
+en	O
+mede	O
+ondergeteekende	O
+Getuigen	O
+,	O
+ten	O
+overstaan	O
+van	O
+den	O
+Heer	O
+Pieter	B-PER
+Christiaan	I-PER
+Willem	I-PER
+Mossel	I-PER
+
+Vrederegter	O
+des	O
+Kantons	O
+
+Bemmel	B-LOC
+,	O
+geassisteerd	O
+met	O
+deszelfs	O
+Griffier	O
+de	O
+Heer	O
+Willem	B-PER
+van	I-PER
+Ewyk	I-PER
+,	O
+getreden	O
+tot	O
+den	O
+openbaren	O
+
+In	O
+zet	O
+by	O
+Hooging	O
+van	O
+eene	O
+
+Hofstede	O
+in	O
+het	O
+Ambt	B-LOC
+Huissen	I-LOC
+aan	O
+de	O
+Loostraat	B-LOC
+gelegen	O
+,	O
+bestaande	O
+in	O
+een	O
+Huis	O
+,	O
+nom	O
+mer	O
+achttien	O
+,	O
+Tuin	O
+,	O
+Boomgaard	O
+,	O
+Bouw	O
+en	O
+Tabaksland	O
+
+,	O
+te	O
+zamen	O
+ongeveer	O
+Een	O
+Bunder	O
+,	O
+zes	O
+Roeden	O
+,	O
+vyf	O
+en	O
+veertig	O
+
+Ellen	O
+,	O
+:	O
+
+een	O
+en	O
+een	O
+kwart	O
+morgen	O
+:	O
+,	O
+groot	O
+;	O
+belend	O
+ten	O
+Noorden	O
+
+Willem	B-PER
+Remie	I-PER
+
+ten	O
+oosten	O
+de	B-PER
+wedu	I-PER
+we	B-PER
+Jacob	I-PER
+Rutjes	I-PER
+ten	O
+zuiden	O
+de	O
+Loostraat	B-LOC
+,	O
+en	O
+ten	O
+westen	O
+Jan	B-PER
+Resing	I-PER
+
+.	O
+
+Hendrik	B-PER
+Gaasbeek	I-PER
+Vyftien	O
+cents	O
+.	O
+.	O
+
+.	O
+.	O
+
+15	O
+dito	O
+.	O
+
+Indien	O
+in	O
+het	O
+op	O
+of	O
+afstaan	O
+eenig	O
+abuis	O
+ontstondt	O
+Zal	O
+de	O
+afslager	O
+zich	O
+mogen	O
+herhalen	O
+en	O
+onbe	O
+haald	O
+Ziin	O
+en	O
+ingeval	O
+twee	O
+of	O
+meer	O
+te	O
+gelyk	O
+myn	O
+spra	O
+ken	O
+of	O
+boden	O
+
+Zoo	O
+dat	O
+daarover	O
+verschil	O
+ontstondt	O
+,	O
+Zal	O
+Zulks	O
+door	O
+den	O
+ondergeteekenden	O
+Notaris	O
+worden	O
+beslist	O
+of	O
+het	O
+perceel	O
+andermaal	O
+worden	O
+opgehangen	O
+zonder	O
+dat	O
+daarte	O
+gen	O
+
+iets	O
+Zal	O
+Kunnen	O
+worden	O
+ingelegd	O
+.	O
+
+Ten	O
+Veertienden	O
+.	O
+
+Heer	O
+R	B-PER
+:	I-PER
+H	I-PER
+.	I-PER
+
+Ruempol	I-PER
+gepens	O
+.	O
+
+Een	O
+Vuur	O
+Haardje	O
+,	O
+der	O
+Jan	B-PER
+ter	I-PER
+Brugge	I-PER
+,	O
+Smit	O
+te	O
+Almelo	B-LOC
+,	O
+voor	O
+een	O
+Gulden	O
+
+1	O

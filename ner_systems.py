@@ -324,19 +324,19 @@ def evaluate_only(path):
 
 def main(path):
     '''Performs experiment'''
-    # print("Running Flair")
-    # run_flair(path)
-    # print("Running Stanza")
-    # run_stanza(path)
+    print("Running Flair")
+    run_flair(path)
+    print("Running Stanza")
+    run_stanza(path)
     print('Running Baseline BERTje')
-    # run_baseline_BERTje(path)
+    run_baseline_BERTje(path)
     print('Running finetuned BERTje')
-    # run_finetuned_BERTje(path)
+    run_finetuned_BERTje(path)
     print('Running GijsBERT')
-    # run_gysbert(path)
-    # print('Done')
+    run_gysbert(path)
+    print('Done')
     print('Evaluating...')
-    evaluate_only(path)
+    # evaluate_only(path)
     
 if __name__ == '__main__':
     # run_on_partitions = ["../data/train/AITrainingset1.0/Clean_Data/test_SA_cleaned.txt"]
@@ -344,7 +344,7 @@ if __name__ == '__main__':
     #                      "../data/test/cleaned/biographynet_test_A_gold_cleaned.tsv", 
     #                      "qualitative_eval/biography_selection_middle_dutch.conll", 
     #                      "qualitative_eval/biography_selection_modern_dutch.conll"]
-    run_on_partitions = ["model_results/finetuned_gysbert_test_SA_cleaned.tsv"]
+    run_on_partitions = ["foo_data/test_RHC_cleaned.txt"]
     for path in run_on_partitions:
         main(path)
     print('Success! Experiment complete')
